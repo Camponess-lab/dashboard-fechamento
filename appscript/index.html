@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Fechamento Gerencial</title>
+  <style>
+    :root {
+      --ml-yellow:#FFE600;
+      --ml-blue:#2D3277;
+      --ml-blue-2:#1E245D;
+      --dark:#111827;
+      --text:#202124;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --bg:#f5f6f8;
+      --card:#ffffff;
+      --green:#15803d;
+      --green-bg:#dcfce7;
+      --red:#b91c1c;
+      --red-bg:#fee2e2;
+      --amber:#92400e;
+      --amber-bg:#fef3c7;
+      --blue-bg:#dbeafe;
+      --shadow:0 14px 35px rgba(17,24,39,.12);
+      --radius:18px;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      font-family:Inter, Arial, Helvetica, sans-serif;
+      background:linear-gradient(180deg, var(--ml-blue) 0, var(--ml-blue) 205px, var(--bg) 205px, var(--bg) 100%);
+      color:var(--text);
+    }
+    .app { max-width:1500px; margin:0 auto; padding:20px; }
+    .topbar {
+      display:flex; align-items:center; justify-content:space-between; gap:18px;
+      background:var(--ml-yellow); border:1px solid rgba(0,0,0,.14); border-radius:24px;
+      padding:18px 20px; box-shadow:var(--shadow);
+    }
+    .brand { display:flex; align-items:center; gap:14px; min-width:330px; }
+    .logo-mark {
+      width:62px; height:48px; border-radius:16px; background:var(--ml-blue); color:var(--ml-yellow);
+      display:grid; place-items:center; font-weight:950; letter-spacing:-.06em; font-size:20px; box-shadow:inset 0 -8px 0 rgba(0,0,0,.08);
+    }
+    .brand h1 { margin:0; font-size:clamp(21px, 3vw, 34px); line-height:1; text-transform:uppercase; letter-spacing:-.04em; }
+    .brand small { display:block; margin-top:5px; color:#333; font-size:12px; font-weight:850; text-transform:uppercase; letter-spacing:.04em; }
+    .header-fields { display:grid; grid-template-columns:repeat(4, minmax(120px,1fr)); gap:10px; align-items:end; }
+    label { display:block; margin-bottom:5px; color:#4b5563; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.04em; }
+    input, textarea, select {
+      width:100%; border:1px solid #d1d5db; border-radius:12px; background:#fff; color:#202124;
+      padding:10px 11px; font-size:14px; outline:none; font-family:inherit;
+    }
+    textarea { min-height:84px; resize:vertical; line-height:1.35; }
+    input:focus, textarea:focus, select:focus { border-color:var(--ml-blue); box-shadow:0 0 0 3px rgba(45,50,119,.16); }
+    .toolbar { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0 18px; align-items:center; }
+    .btn {
+      border:1px solid var(--ml-blue); background:var(--ml-blue); color:#fff; border-radius:999px; padding:10px 14px;
+      font-size:13px; font-weight:900; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:.15s;
+    }
+    .btn:hover { transform:translateY(-1px); box-shadow:0 7px 16px rgba(0,0,0,.12); }
+    .btn.secondary { background:#fff; color:var(--ml-blue); }
+    .btn.yellow { background:var(--ml-yellow); color:var(--ml-blue); border-color:var(--ml-yellow); }
+    .btn.danger { background:#b91c1c; border-color:#b91c1c; color:#fff; }
+    .btn.small { padding:7px 10px; font-size:12px; }
+    .save-status { margin-left:auto; color:#fff; font-size:12px; font-weight:700; opacity:.95; }
+    .grid { display:grid; grid-template-columns:1.28fr .72fr; gap:18px; align-items:start; }
+    .section {
+      background:var(--card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:18px;
+      overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.055);
+    }
+    .section-title {
+      display:flex; justify-content:space-between; gap:12px; align-items:center;
+      background:linear-gradient(90deg, var(--ml-yellow), #fff18c); color:#111; padding:11px 14px;
+      font-weight:950; text-transform:uppercase; letter-spacing:.025em;
+    }
+    .section-title.dark { background:var(--ml-blue); color:#fff; }
+    .hint { font-size:11px; color:rgba(0,0,0,.64); font-weight:800; }
+    .section-title.dark .hint { color:rgba(255,255,255,.78); }
+    .section-body { padding:14px; }
+    .kpi-grid { display:grid; grid-template-columns:repeat(6, 1fr); gap:12px; }
+    .kpi-card { border:1px solid var(--border); border-radius:16px; background:#fff; overflow:hidden; }
+    .kpi-card .kpi-head { background:#f3f4f6; padding:9px 10px; font-weight:950; font-size:12px; text-align:center; text-transform:uppercase; }
+    .kpi-card .kpi-value { padding:10px; }
+    .kpi-card input { text-align:center; font-size:22px; font-weight:950; border:0; background:transparent; padding:4px; }
+    .kpi-card .sub { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:0 10px 10px; }
+    .kpi-card .sub input { font-size:12px; font-weight:850; border:1px solid var(--border); padding:7px; }
+    .kpi-card.good { border-color:#86efac; background:var(--green-bg); }
+    .kpi-card.good .kpi-head { background:#22c55e; color:#fff; }
+    .kpi-card.bad { border-color:#fecaca; background:var(--red-bg); }
+    .kpi-card.bad .kpi-head { background:#ef4444; color:#fff; }
+    .kpi-card.neutral .kpi-head { background:var(--ml-yellow); color:#111; }
+    .cards-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px; }
+    .mini-card { border:1px solid var(--border); border-radius:15px; padding:13px; background:#fff; }
+    .mini-card span { display:block; font-size:11px; color:var(--muted); font-weight:900; text-transform:uppercase; }
+    .mini-card strong { display:block; font-size:24px; line-height:1; margin-top:6px; }
+    .mini-card.good strong { color:var(--green); }
+    .mini-card.bad strong { color:var(--red); }
+    table { width:100%; border-collapse:collapse; }
+    th { background:var(--ml-blue); color:#fff; padding:9px 8px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.03em; }
+    td { border-bottom:1px solid var(--border); padding:7px 6px; vertical-align:top; }
+    tr:hover td { background:#fffbea; }
+    .hourly-table input, .hourly-table textarea, .retro-table input { border-radius:9px; padding:8px; font-size:13px; }
+    .hourly-table textarea { min-height:42px; }
+    .w-hour { width:80px; } .w-dot { width:92px; } .w-pcts { width:88px; } .nowrap { white-space:nowrap; }
+    .split { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .split-3 { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+    .status-list { display:grid; gap:8px; }
+    .status-line { display:grid; grid-template-columns:1fr 155px 42px; gap:8px; align-items:center; }
+    .status-chip { border-radius:999px; padding:7px 10px; font-size:12px; font-weight:900; text-align:center; border:1px solid transparent; }
+    .chip-controlado { background:var(--green-bg); color:var(--green); border-color:#bbf7d0; }
+    .chip-saturado { background:var(--red-bg); color:var(--red); border-color:#fecaca; }
+    .chip-finalizado { background:var(--blue-bg); color:#1d4ed8; border-color:#bfdbfe; }
+    .chip-pendente { background:var(--amber-bg); color:var(--amber); border-color:#fde68a; }
+    .area-grid { display:grid; gap:10px; }
+    .area-card { border:1px solid var(--border); border-radius:14px; overflow:hidden; background:#fff; }
+    .area-card h3 { margin:0; background:#f2f2f2; padding:10px 12px; font-size:13px; text-transform:uppercase; }
+    .area-cols { display:grid; grid-template-columns:1fr 1fr; }
+    .area-cols > div { padding:10px; }
+    .area-cols > div:first-child { border-right:1px solid var(--border); }
+    .day-box { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .day-card { border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+    .day-card h3 { margin:0; background:var(--ml-blue); color:#fff; padding:10px; font-size:13px; text-transform:uppercase; }
+    .day-fields { padding:10px; display:grid; gap:10px; }
+    .dot-result { padding:12px; background:var(--ml-yellow); text-align:center; font-weight:950; font-size:22px; }
+    .copybox { white-space:pre-wrap; background:#111827; color:#fff; border-radius:16px; padding:14px; min-height:160px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; overflow:auto; }
+    .note { font-size:12px; color:var(--muted); line-height:1.35; }
+    .hidden { display:none!important; }
+    .pill { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.24); border-radius:999px; padding:7px 10px; font-size:12px; font-weight:850; }
+    .history-list { display:grid; gap:10px; }
+    .history-card { border:1px solid var(--border); border-radius:14px; padding:11px; background:#fff; display:grid; gap:7px; }
+    .history-card strong { font-size:14px; }
+    .history-card small { color:var(--muted); font-size:11px; }
+    .history-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .footer { margin:22px 0 10px; color:var(--muted); font-size:12px; text-align:center; }
+
+
+
+    /* ===== Tela de login ===== */
+    body.login-active {
+      min-height:100vh;
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.10) 0 18%, transparent 19%),
+        radial-gradient(circle at bottom right, rgba(255,255,255,0.08) 0 16%, transparent 17%),
+        linear-gradient(135deg, #262b73, #1f245f);
+      overflow:hidden;
+    }
+    body.login-active .app, body.login-active .print-report { display:none!important; }
+    body.logged-in .login-wrapper { display:none!important; }
+
+    .login-wrapper {
+      position:fixed;
+      inset:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px;
+      z-index:99999;
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.10) 0 18%, transparent 19%),
+        radial-gradient(circle at bottom right, rgba(255,255,255,0.08) 0 16%, transparent 17%),
+        linear-gradient(135deg, #262b73, #1f245f);
+      overflow:auto;
+    }
+
+    .login-card {
+      width:100%;
+      max-width:1080px;
+      min-height:620px;
+      display:grid;
+      grid-template-columns:1.05fr 1fr;
+      background:#fff;
+      border-radius:32px;
+      overflow:hidden;
+      box-shadow:0 25px 60px rgba(0,0,0,.22);
+      animation:entrada .6s ease;
+    }
+    @keyframes entrada {
+      from { opacity:0; transform:translateY(18px) scale(.98); }
+      to { opacity:1; transform:translateY(0) scale(1); }
+    }
+
+    .login-brand {
+      position:relative;
+      background:#ffe600;
+      padding:56px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      overflow:hidden;
+    }
+    .login-brand::before {
+      content:"";
+      position:absolute;
+      width:420px;
+      height:420px;
+      border-radius:50%;
+      background:rgba(255,255,255,.20);
+      right:-160px;
+      bottom:-130px;
+    }
+    .login-brand::after {
+      content:"";
+      position:absolute;
+      width:220px;
+      height:220px;
+      border-radius:50%;
+      background:rgba(45,50,127,.07);
+      left:-80px;
+      top:-70px;
+    }
+    .brand-content {
+      position:relative;
+      z-index:2;
+      text-align:center;
+    }
+    .logo-box {
+      width:150px;
+      height:150px;
+      border-radius:36px;
+      background:rgba(255,255,255,.35);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin:0 auto 28px;
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.35);
+    }
+    .logo-text {
+      font-size:68px;
+      font-weight:950;
+      color:#2d327f;
+      letter-spacing:-4px;
+      line-height:1;
+    }
+    .tag {
+      display:inline-block;
+      background:#2d327f;
+      color:#ffe600;
+      padding:10px 28px;
+      border-radius:999px;
+      font-size:14px;
+      font-weight:950;
+      letter-spacing:4px;
+      margin-bottom:34px;
+      box-shadow:0 12px 28px rgba(45,50,127,.25);
+    }
+    .brand-title {
+      color:#2d327f;
+      font-size:25px;
+      font-weight:950;
+      line-height:1.22;
+      margin:0 0 18px;
+    }
+    .brand-subtitle {
+      color:rgba(45,50,127,.78);
+      font-size:15px;
+      font-weight:750;
+      line-height:1.6;
+      max-width:360px;
+      margin:0 auto;
+    }
+
+    .login-form-area {
+      padding:70px 64px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      background:
+        radial-gradient(circle at top right, rgba(255,230,0,.10), transparent 35%),
+        #fff;
+    }
+    .form-header { margin-bottom:34px; }
+    .form-header h1 {
+      font-size:36px;
+      color:#2d327f;
+      font-weight:950;
+      margin:0 0 8px;
+      letter-spacing:-.8px;
+    }
+    .form-header p {
+      color:#8b90a3;
+      font-size:16px;
+      font-weight:750;
+      margin:0;
+    }
+    .field-group { margin-bottom:20px; }
+    .field-group label {
+      display:block;
+      margin-bottom:9px;
+      font-size:13px;
+      color:#202439;
+      font-weight:950;
+      letter-spacing:1.7px;
+      text-transform:uppercase;
+    }
+    .input-box {
+      position:relative;
+      display:flex;
+      align-items:center;
+    }
+    .input-box svg {
+      position:absolute;
+      left:18px;
+      width:20px;
+      height:20px;
+      fill:#b7bdcc;
+      pointer-events:none;
+      z-index:1;
+    }
+    .input-box input {
+      width:100%;
+      height:62px;
+      border:1.5px solid #e6e8f0;
+      border-radius:16px;
+      padding:0 52px;
+      font-size:16px;
+      font-weight:750;
+      color:#202439;
+      outline:none;
+      transition:.2s;
+      background:#fff;
+      box-shadow:0 8px 20px rgba(32,36,57,.04);
+    }
+    .input-box input:focus {
+      border-color:#2d327f;
+      box-shadow:0 0 0 4px rgba(45,50,127,.12);
+    }
+    .toggle-password {
+      position:absolute;
+      right:16px;
+      border:none;
+      background:transparent;
+      color:#8b90a3;
+      font-size:13px;
+      font-weight:950;
+      cursor:pointer;
+      padding:8px;
+      z-index:2;
+    }
+    .login-msg {
+      display:none;
+      margin:6px 0 18px;
+      padding:13px 15px;
+      border-radius:14px;
+      background:rgba(217,48,37,.10);
+      color:#d93025;
+      font-size:14px;
+      font-weight:850;
+    }
+    .login-msg:not(:empty) { display:block; }
+
+    .login-button {
+      width:100%;
+      height:66px;
+      border:none;
+      border-radius:16px;
+      background:linear-gradient(135deg,#2d327f,#20245f);
+      color:#fff;
+      font-size:18px;
+      font-weight:950;
+      letter-spacing:3px;
+      cursor:pointer;
+      margin-top:10px;
+      box-shadow:0 18px 35px rgba(45,50,127,.28);
+      transition:.2s;
+      text-transform:uppercase;
+    }
+    .login-button:hover {
+      transform:translateY(-2px);
+      box-shadow:0 22px 42px rgba(45,50,127,.34);
+    }
+    .login-button:active { transform:scale(.99); }
+    .login-button:disabled,
+    .login-button.loading {
+      opacity:.75;
+      pointer-events:none;
+    }
+    .login-footer {
+      margin-top:44px;
+      text-align:center;
+      color:#bdc2cf;
+      font-size:13px;
+      font-weight:950;
+      letter-spacing:3px;
+      text-transform:uppercase;
+    }
+
+    @media (max-width:900px) {
+      .login-card { grid-template-columns:1fr; max-width:520px; }
+      .login-brand { padding:38px 28px; }
+      .login-form-area { padding:42px 30px; }
+      .logo-box { width:110px; height:110px; border-radius:28px; }
+      .logo-text { font-size:50px; }
+      .form-header h1 { font-size:30px; }
+    }
+    @media (max-width:520px) {
+      .login-wrapper { padding:18px; }
+      .login-card { border-radius:24px; }
+      .login-form-area { padding:34px 22px; }
+    }
+
+    .print-report { display:none; }
+    .pr-sheet { width:287mm; height:200mm; background:#fff; color:#111; overflow:hidden; font-family:Inter, Arial, Helvetica, sans-serif; }
+    .pr-header { display:grid; grid-template-columns:1.15fr .85fr; gap:5px; align-items:stretch; margin-bottom:5px; }
+    .pr-title-box { background:var(--ml-yellow); border:1px solid #111; border-radius:8px; padding:6px 8px; }
+    .pr-title-box h2 { margin:0; font-size:19px; line-height:1; text-transform:uppercase; }
+    .pr-title-box p { margin:3px 0 0; font-size:8px; font-weight:800; text-transform:uppercase; color:#333; }
+    .pr-meta { display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; }
+    .pr-meta div, .pr-kpi, .pr-card { border:1px solid #cfd4dc; border-radius:8px; background:#fff; overflow:hidden; }
+    .pr-meta div { padding:5px 6px; }
+    .pr-label { display:block; font-size:7px; text-transform:uppercase; color:#555; font-weight:900; letter-spacing:.04em; }
+    .pr-big { display:block; font-size:13px; font-weight:950; line-height:1.05; margin-top:2px; }
+    .pr-kpis { display:grid; grid-template-columns:repeat(6,1fr); gap:5px; margin-bottom:5px; }
+    .pr-kpi { min-height:37px; padding:5px 6px; border-top-width:5px; }
+    .pr-kpi.good { border-top-color:#22c55e; background:#f0fdf4; }
+    .pr-kpi.bad { border-top-color:#ef4444; background:#fff1f2; }
+    .pr-kpi.neutral { border-top-color:var(--ml-yellow); background:#fffde7; }
+    .pr-kpi .pr-value { font-size:17px; font-weight:950; line-height:1; margin-top:2px; }
+    .pr-kpi small { display:block; font-size:7px; font-weight:800; color:#555; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pr-main { display:grid; grid-template-columns:1.12fr .88fr; gap:5px; align-items:start; }
+    .pr-right { display:grid; grid-template-columns:1fr 1fr; gap:5px; align-items:start; }
+    .pr-card-title { background:#111; color:#fff; font-size:8px; padding:4px 6px; font-weight:950; text-transform:uppercase; display:flex; justify-content:space-between; gap:6px; }
+    .pr-card-body { padding:5px 6px; font-size:8px; line-height:1.16; }
+    .pr-text { white-space:pre-line; font-size:8px; line-height:1.15; }
+    .pr-text.compact { font-size:7.5px; line-height:1.12; }
+    .pr-table { width:100%; border-collapse:collapse; font-size:7.4px; line-height:1.05; }
+    .pr-table th { background:#f2c94c; color:#111; padding:3px 4px; font-size:7px; text-align:left; border:1px solid #d0d0d0; }
+    .pr-table td { padding:2.4px 4px; border:1px solid #e4e4e4; vertical-align:top; }
+    .pr-table .num { text-align:right; white-space:nowrap; }
+    .pr-bottom { display:grid; grid-template-columns:.9fr .78fr 1.28fr .8fr; gap:5px; margin-top:5px; align-items:start; }
+    .pr-status-grid { display:grid; grid-template-columns:1fr 1fr; gap:3px; }
+    .pr-status { border:1px solid #e5e7eb; border-radius:6px; padding:3px 4px; font-size:7.5px; line-height:1.05; }
+    .pr-status b { display:block; font-size:7.2px; }
+    .pr-chip { display:inline-block; margin-top:2px; border-radius:99px; padding:1px 5px; font-size:6.7px; font-weight:950; }
+    .pr-chip.good { color:#166534; background:#dcfce7; }
+    .pr-chip.bad { color:#991b1b; background:#fee2e2; }
+    .pr-chip.mid { color:#92400e; background:#fef3c7; }
+    .pr-chip.info { color:#1d4ed8; background:#dbeafe; }
+    .pr-mini-metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:3px; }
+    .pr-mini-metrics div { border:1px solid #e5e7eb; border-radius:6px; padding:3px 4px; }
+    .pr-mini-metrics strong { display:block; font-size:11px; line-height:1; }
+    .pr-footer { margin-top:4px; font-size:6.8px; color:#555; display:flex; justify-content:space-between; gap:8px; }
+
+    @media (max-width:1180px) {
+      .grid { grid-template-columns:1fr; }
+      .kpi-grid { grid-template-columns:repeat(3,1fr); }
+      .cards-row { grid-template-columns:repeat(2,1fr); }
+    }
+    @media (max-width:760px) {
+      .app { padding:12px; }
+      .topbar { flex-direction:column; align-items:stretch; }
+      .header-fields, .kpi-grid, .cards-row, .split, .split-3, .day-box { grid-template-columns:1fr; }
+      .area-cols { grid-template-columns:1fr; }
+      .area-cols > div:first-child { border-right:0; border-bottom:1px solid var(--border); }
+      .table-wrap { overflow:auto; }
+      .hourly-table { min-width:760px; }
+      .save-status { width:100%; color:#fff; }
+    }
+    @media print {
+      @page { size:A4 landscape; margin:5mm; }
+      html, body { width:297mm; min-height:210mm; margin:0!important; padding:0!important; background:#fff!important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      body > .app { display:none!important; }
+      .print-report { display:block!important; width:287mm; height:200mm; background:#fff; overflow:hidden; zoom:var(--print-scale,.86); }
+      .pr-sheet { box-shadow:none; }
+    }
+  </style>
+</head>
+<body class="login-active">
+  <!-- TELA DE LOGIN -->
+  <section class="login-wrapper" id="loginScreen" aria-label="Login do sistema">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="brand-content">
+          <div class="logo-box">
+            <div class="logo-text">ML</div>
+          </div>
+
+          <div class="tag">FECHAMENTO</div>
+
+          <h2 class="brand-title">
+            Sistema de Fechamento<br>
+            Gerencial Operacional
+          </h2>
+
+          <p class="brand-subtitle">
+            Controle de DOT, OOT, perdas, pacotes processados e fechamento operacional.
+          </p>
+        </div>
+      </div>
+
+      <div class="login-form-area">
+        <div class="form-header">
+          <h1>Bem-vindo de volta!</h1>
+          <p>Faça login para acessar o sistema</p>
+        </div>
+
+        <form onsubmit="event.preventDefault(); doLogin();">
+          <div class="field-group">
+            <label>Usuário</label>
+            <div class="input-box">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v1.2c0 .7.5 1.2 1.2 1.2h16.8c.7 0 1.2-.5 1.2-1.2v-1.2c0-3.2-6.4-4.8-9.6-4.8z"/>
+              </svg>
+              <input id="loginUser" type="text" placeholder="Digite seu usuário" autocomplete="username">
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Senha</label>
+            <div class="input-box">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8h-1V6c0-2.8-2.2-5-5-5S7 3.2 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-9 0V6c0-1.7 1.3-3 3-3s3 1.3 3 3v2H9z"/>
+              </svg>
+              <input id="loginPass" type="password" placeholder="Digite sua senha" autocomplete="current-password">
+              <button type="button" class="toggle-password" onclick="toggleSenha()">VER</button>
+            </div>
+          </div>
+
+          <div class="login-msg" id="loginMsg"></div>
+
+          <button class="login-button" id="loginBtn" type="submit">
+            ENTRAR
+          </button>
+        </form>
+
+        <div class="login-footer">
+          Mercado Livre • Fechamento
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo-mark">ML</div>
+        <div>
+          <h1 id="mainTitle">FECHAMENTO GERENCIAL</h1>
+          <small>Sistema online • Google Sheets • PDF 1 página</small>
+        </div>
+      </div>
+      <div class="header-fields">
+        <div><label>Turno</label><select id="shift"><option>T1</option><option>T2</option><option>T3</option></select></div>
+        <div><label>Data do fechamento</label><input id="date" type="date"></div>
+        <div><label>Título</label><input id="title" type="text" placeholder="FECHAMENTO T1"></div>
+        <div><label>Responsável</label><input id="responsavel" type="text" placeholder="Nome do responsável"></div>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <button class="btn yellow" onclick="saveOnline()">💾 Salvar fechamento</button>
+      <button class="btn" onclick="loadHistory()">🔄 Atualizar histórico</button>
+      <button class="btn secondary" onclick="copySummary()">📋 Copiar WhatsApp</button>
+      <button class="btn secondary" onclick="printPdf()">📄 PDF 1 página</button>
+      <button class="btn secondary" onclick="exportJson()">⬇️ Exportar JSON</button>
+      <label class="btn secondary" for="importFile">📂 Importar JSON</label><input id="importFile" class="hidden" type="file" accept="application/json" onchange="importJson(event)">
+      <button class="btn danger" onclick="clearAll()">🧹 Limpar</button>
+      <button class="btn secondary" onclick="logoutApp()">🚪 Sair</button>
+      <span class="pill hidden" id="userPill"></span>
+      <span class="save-status" id="saveStatus">Rascunho local ativo</span>
+    </div>
+
+    <section class="section">
+      <div class="section-title">KPIs <span class="hint">DOT/OOT verde somente a partir de 98%</span></div>
+      <div class="section-body"><div class="kpi-grid" id="kpiGrid"></div></div>
+    </section>
+
+    <div class="grid">
+      <main>
+        <section class="section">
+          <div class="section-title dark">DOT hora a hora <span class="hint">Hora, DOT, PCTS, perdas e justificativa/ação</span></div>
+          <div class="section-body">
+            <div class="cards-row">
+              <div class="mini-card" id="avgDotCard"><span>DOT médio ponderado</span><strong id="avgDot">0,00%</strong></div>
+              <div class="mini-card"><span>Total PCTS informado</span><strong id="totalPcts">0</strong></div>
+              <div class="mini-card bad"><span>Total perdas lidas</span><strong id="totalParsedLoss">0</strong></div>
+              <div class="mini-card" id="worstHourCard"><span>Hora mais crítica</span><strong id="worstHour">-</strong></div>
+            </div>
+            <div class="table-wrap">
+              <table class="hourly-table">
+                <thead><tr><th class="w-hour">Hora</th><th class="w-dot">DOT</th><th class="w-pcts">PCTS</th><th>Maiores perdas por hora</th><th class="nowrap">Ação</th></tr></thead>
+                <tbody id="hourlyBody"></tbody>
+              </table>
+            </div>
+            <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn secondary" onclick="addHourlyRow()">+ Adicionar horário</button>
+              <button class="btn secondary" onclick="buildTopLosses(true)">🔄 Atualizar perdas T1</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Status consolidado</div>
+          <div class="section-body split">
+            <div>
+              <h3 style="margin:0 0 10px">🏢 Armazenagem</h3>
+              <div id="armazenagemList" class="status-list"></div>
+              <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn secondary small" onclick="addArmRow()">+ Adicionar status</button>
+              </div>
+            </div>
+            <div>
+              <h3 style="margin:0 0 10px">📦 Inbound</h3>
+              <div class="split-3">
+                <div><label>Programado</label><input id="in_programado" type="number"></div>
+                <div><label>Antec. p/ T3</label><input id="in_antecT3" type="number"></div>
+                <div><label>Atrasados</label><input id="in_atrasados" type="number"></div>
+                <div><label>Antec. p/ T2</label><input id="in_antecT2" type="number"></div>
+                <div><label>Recebidos</label><input id="in_recebidos" type="number"></div>
+                <div><label>Bolsão</label><input id="in_bolsao" type="number"></div>
+              </div>
+              <div style="margin-top:10px"><label>Obs. inbound</label><textarea id="in_obs" placeholder="Pendências, impactos ou observações rápidas"></textarea></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title dark">Status processamento <span class="hint">Início e final por área</span></div>
+          <div class="section-body">
+            <div class="area-grid" id="areasGrid"></div>
+            <div style="margin-top:10px"><button class="btn secondary" onclick="addAreaRow()">+ Adicionar área</button></div>
+          </div>
+        </section>
+      </main>
+
+      <aside>
+        <section class="section">
+          <div class="section-title">Retroativo</div>
+          <div class="section-body">
+            <table class="retro-table">
+              <thead><tr><th>Data</th><th>Fech.</th><th>Atual</th><th>Dif.</th></tr></thead>
+              <tbody id="retroBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Ações e observações</div>
+          <div class="section-body"><label>Observações gerenciais</label><textarea id="acoes" placeholder="Ex.: Plano de ação, impacto, tratativa, foco do time"></textarea></div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Principais perdas T1</div>
+          <div class="section-body"><label>Resumo editável</label><textarea id="principaisT1" style="min-height:160px"></textarea><p class="note">Use "Atualizar perdas T1" para consolidar automaticamente as perdas hora a hora.</p></div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Perda OOT T1</div>
+          <div class="section-body"><textarea id="ootLoss" placeholder="Ex.: Sem perdas que diferem do DOT"></textarea></div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Principais perdas x área</div>
+          <div class="section-body"><textarea id="areaLoss" style="min-height:130px"></textarea></div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Dia anterior x atual</div>
+          <div class="section-body day-box">
+            <div class="day-card"><h3>Dia anterior</h3><div class="day-fields"><div><label>Expedidos</label><input id="prevExp" type="number"></div><div><label>Perdas</label><input id="prevLoss" type="number"></div><div class="dot-result" id="prevDot">0,00%</div></div></div>
+            <div class="day-card"><h3>Atual</h3><div class="day-fields"><div><label>Expedidos</label><input id="curExp" type="number"></div><div><label>Perdas</label><input id="curLoss" type="number"></div><div class="dot-result" id="curDot">0,00%</div></div></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title dark">Prévia para WhatsApp</div>
+          <div class="section-body"><div class="copybox" id="summaryBox"></div></div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Histórico salvo <span class="hint">Google Sheets</span></div>
+          <div class="section-body">
+            <div id="sheetLink" class="note" style="margin-bottom:10px"></div>
+            <div id="historyList" class="history-list"><p class="note">Clique em "Atualizar histórico".</p></div>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <div class="footer">Sistema de Fechamento Gerencial • Google Apps Script + Google Sheets • Mercado Livre style</div>
+  </div>
+
+  <div id="printReport" class="print-report" aria-hidden="true"></div>
+
+<script>
+const DEFAULT_DATA = {
+  id:'', title:'FECHAMENTO T1', date:'', shift:'T1', responsavel:'',
+  kpis:{absT1:'',dotT1:'',ootT1:'',dotDia:'',ootDia:'',dotSemana:'',dotT1V3:'',dotT1V4:'',dotDiaV3:'',dotDiaV4:'',dotSemanaV3:'',dotSemanaV4:''},
+  hourly:[
+    {hora:'08:00',dot:'',pcts:'',perdas:''},{hora:'09:00',dot:'',pcts:'',perdas:''},{hora:'10:00',dot:'',pcts:'',perdas:''},
+    {hora:'11:00',dot:'',pcts:'',perdas:''},{hora:'11:30',dot:'',pcts:'',perdas:''},{hora:'12:00',dot:'',pcts:'',perdas:''},
+    {hora:'13:00',dot:'',pcts:'',perdas:''},{hora:'14:00',dot:'',pcts:'',perdas:''},{hora:'15:00',dot:'',pcts:'',perdas:''}
+  ],
+  retro:[{data:'W24',fech:'',atual:'',dif:''},{data:'Dom',fech:'',atual:'',dif:''},{data:'Seg',fech:'',atual:'',dif:''},{data:'Ter',fech:'',atual:'',dif:''},{data:'Qua',fech:'',atual:'',dif:''},{data:'Qui',fech:'',atual:'',dif:''},{data:'Sext',fech:'',atual:'',dif:''},{data:'Sáb',fech:'',atual:'',dif:''},{data:'W25',fech:'',atual:'',dif:''}],
+  acoes:'', principaisT1:'', ootLoss:'', areaLoss:'',
+  armazenagem:[{item:'Buffer de cores',status:'Controlado'},{item:'Buffer de V4',status:'Controlado'},{item:'V3 Out branco',status:'Controlado'},{item:'Manga City',status:'Controlado'},{item:'Puxada para T2',status:'Finalizado'},{item:'Estouro',status:'Finalizado'}],
+  inbound:{programado:'',antecT3:'',atrasados:'',antecT2:'',recebidos:'',bolsao:'',obs:''},
+  areas:[{area:'REWORK',inicio:'',final:''},{area:'ESTEIRA',inicio:'',final:''},{area:'SORTER',inicio:'',final:''},{area:'VOLUMOSO',inicio:'',final:''},{area:'AÉREO',inicio:'',final:''}],
+  previousDay:{expedidos:'',perdas:''}, currentDay:{expedidos:'',perdas:''},
+  metrics:{avgDot:'',totalPcts:'',totalParsedLoss:'',worstHour:''}, statusResumo:''
+};
+const STORAGE_KEY = 'fechamento_apps_script_completo_v1';
+const kpiConfig = [
+  ['absT1','ABS T1','abs',[]],
+  ['dotT1','DOT T1','dot',[['dotT1V3','V3'],['dotT1V4','V4']]],
+  ['ootT1','OOT T1','dot',[]],
+  ['dotDia','DOT DIA','dot',[['dotDiaV3','V3'],['dotDiaV4','V4']]],
+  ['ootDia','OOT DIA','dot',[]],
+  ['dotSemana','DOT SEMANA','dot',[['dotSemanaV3','V3'],['dotSemanaV4','V4']]]
+];
+const statusOptions = ['Controlado','Saturado','Finalizado','Em andamento','Pendente','Crítico'];
+let state = clone(DEFAULT_DATA);
+let appInfo = null;
+let _historyListenerAdded = false;
+let _buildingPrint = false;
+
+function startAppAfterLogin(userLabel) {
+  document.body.classList.remove('login-active');
+  document.body.classList.add('logged-in');
+  if (userLabel) {
+    sessionStorage.setItem('fechamento_login_user', userLabel);
+    const pill = $('userPill');
+    if (pill) { pill.textContent = '👤 ' + userLabel; pill.classList.remove('hidden'); }
+  }
+  load();
+}
+
+function initLogin() {
+  const ok = sessionStorage.getItem('fechamento_login_ok') === '1';
+  if (ok) {
+    startAppAfterLogin(sessionStorage.getItem('fechamento_login_user') || 'Usuário');
+  } else {
+    document.body.classList.add('login-active');
+    document.body.classList.remove('logged-in');
+    setTimeout(() => { const u = $('loginUser'); if (u) u.focus(); }, 100);
+  }
+}
+
+function toggleSenha() {
+  const senha = $('loginPass');
+  const btn = document.querySelector('.toggle-password');
+  if (!senha || !btn) return;
+  if (senha.type === 'password') {
+    senha.type = 'text';
+    btn.textContent = 'OCULTAR';
+  } else {
+    senha.type = 'password';
+    btn.textContent = 'VER';
+  }
+}
+
+function doLogin() {
+  const user = ($('loginUser')?.value || '').trim().toLowerCase();
+  const pass = ($('loginPass')?.value || '').trim();
+  const msg = $('loginMsg');
+  const btn = $('loginBtn');
+  if (!user || !pass) { if (msg) msg.textContent = 'Preencha usuário e senha para continuar.'; return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'VALIDANDO...'; btn.classList.add('loading'); }
+  if (typeof google === 'undefined' || !google.script) {
+    if (msg) msg.textContent = 'Ambiente de desenvolvimento — login disponível apenas no App publicado.';
+    if (btn) { btn.disabled = false; btn.textContent = 'ENTRAR'; btn.classList.remove('loading'); }
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(res => {
+      if (btn) { btn.disabled = false; btn.textContent = 'ENTRAR'; btn.classList.remove('loading'); }
+      if (res && res.ok) {
+        sessionStorage.setItem('fechamento_login_ok', '1');
+        sessionStorage.setItem('fechamento_login_user', res.nome || res.usuario || user);
+        startAppAfterLogin(res.nome || res.usuario || user);
+      } else {
+        if (msg) msg.textContent = (res && res.message) || 'Usuário ou senha inválidos.';
+      }
+    })
+    .withFailureHandler(err => {
+      if (btn) { btn.disabled = false; btn.textContent = 'ENTRAR'; btn.classList.remove('loading'); }
+      if (msg) msg.textContent = 'Erro no login: ' + err.message;
+    })
+    .checkLogin(user, pass);
+}
+
+function logoutApp() {
+  sessionStorage.removeItem('fechamento_login_ok');
+  sessionStorage.removeItem('fechamento_login_user');
+  window.location.reload();
+}
+
+let saveTimer = null;
+
+function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
+function $(id) { return document.getElementById(id); }
+function n(v) {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === 'number') return v;
+  let s = String(v).trim().replace('%', '').replace(/\s/g, '');
+  if (!s) return 0;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  return Number(s) || 0;
+}
+function pct(v) { return n(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) + '%'; }
+function intFmt(v) { return Math.round(n(v)).toLocaleString('pt-BR'); }
+function safe(v) { return String(v ?? ''); }
+function escHtml(v) { return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+function dateBR() { return state.date ? state.date.split('-').reverse().join('/') : ''; }
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+
+function load() {
+  try { const saved = localStorage.getItem(STORAGE_KEY); if (saved) state = mergeDeep(clone(DEFAULT_DATA), JSON.parse(saved)); } catch(e) { console.warn(e); }
+  if (!state.date) state.date = todayISO();
+  renderAll();
+  document.addEventListener('input', scheduleLocalSave);
+  document.addEventListener('change', scheduleLocalSave);
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      if (document.body.classList.contains('logged-in')) saveOnline();
+    }
+  });
+  loadAppInfo();
+  loadHistory();
+}
+
+function mergeDeep(target, source) {
+  for (const key of Object.keys(source || {})) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) target[key] = mergeDeep(target[key] || {}, source[key]);
+    else target[key] = source[key];
+  }
+  return target;
+}
+function scheduleLocalSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveLocal, 200); }
+function saveLocal() {
+  collectState();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  $('saveStatus').textContent = 'Rascunho salvo localmente às ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  updateCalculations();
+}
+
+function renderAll() {
+  $('shift').value = state.shift || 'T1'; $('date').value = state.date || ''; $('title').value = state.title || 'FECHAMENTO T1'; $('responsavel').value = state.responsavel || '';
+  updateHeaderTitle(); renderKpis(); renderHourly(); renderRetro(); renderStatus(); renderAreas();
+  $('acoes').value = state.acoes || ''; $('principaisT1').value = state.principaisT1 || ''; $('ootLoss').value = state.ootLoss || ''; $('areaLoss').value = state.areaLoss || '';
+  $('in_programado').value = state.inbound.programado || ''; $('in_antecT3').value = state.inbound.antecT3 || ''; $('in_atrasados').value = state.inbound.atrasados || ''; $('in_antecT2').value = state.inbound.antecT2 || ''; $('in_recebidos').value = state.inbound.recebidos || ''; $('in_bolsao').value = state.inbound.bolsao || ''; $('in_obs').value = state.inbound.obs || '';
+  $('prevExp').value = state.previousDay.expedidos || ''; $('prevLoss').value = state.previousDay.perdas || ''; $('curExp').value = state.currentDay.expedidos || ''; $('curLoss').value = state.currentDay.perdas || '';
+  updateCalculations();
+}
+function updateHeaderTitle() { const d = $('date').value ? $('date').value.split('-').reverse().join('/') : ''; $('mainTitle').textContent = `${$('title').value || 'FECHAMENTO'}${d ? ' • ' + d : ''}`; }
+function renderKpis() {
+  const grid = $('kpiGrid'); grid.innerHTML = '';
+  for (const [key, label, kind, subs] of kpiConfig) {
+    const card = document.createElement('div'); card.className = 'kpi-card'; card.id = 'card_' + key;
+    card.innerHTML = `<div class="kpi-head">${label}</div><div class="kpi-value"><input type="text" inputmode="decimal" id="kpi_${key}" value="${safe(state.kpis[key])}" aria-label="${label}"></div>`;
+    if (subs.length) {
+      const sub = document.createElement('div'); sub.className = 'sub';
+      sub.innerHTML = subs.map(([skey, slabel]) => `<input type="text" inputmode="decimal" id="kpi_${skey}" value="${safe(state.kpis[skey])}" placeholder="${slabel}" title="${slabel}">`).join('');
+      card.appendChild(sub);
+    }
+    grid.appendChild(card);
+  }
+}
+function renderHourly() {
+  const body = $('hourlyBody'); body.innerHTML = '';
+  (state.hourly || []).forEach((r, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><input data-hourly="hora" data-idx="${i}" value="${safe(r.hora)}"></td>
+      <td><input data-hourly="dot" data-idx="${i}" inputmode="decimal" value="${safe(r.dot)}"></td>
+      <td><input data-hourly="pcts" data-idx="${i}" type="number" value="${safe(r.pcts)}"></td>
+      <td><textarea data-hourly="perdas" data-idx="${i}" placeholder="Ex.: 55 OR - Missorted / 35 ARM - Sem atrelamento">${safe(r.perdas)}</textarea></td>
+      <td class="nowrap"><button class="btn secondary small" onclick="removeHourlyRow(${i})">Excluir</button></td>`;
+    body.appendChild(tr);
+  });
+}
+function renderRetro() {
+  const body = $('retroBody'); body.innerHTML = '';
+  (state.retro || []).forEach((r, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><input data-retro="data" data-idx="${i}" value="${safe(r.data)}"></td>
+      <td><input data-retro="fech" data-idx="${i}" inputmode="decimal" value="${safe(r.fech)}"></td>
+      <td><input data-retro="atual" data-idx="${i}" inputmode="decimal" value="${safe(r.atual)}"></td>
+      <td><input data-retro="dif" data-idx="${i}" inputmode="decimal" value="${safe(r.dif)}" readonly></td>`;
+    body.appendChild(tr);
+  });
+}
+function renderStatus() {
+  const list = $('armazenagemList'); list.innerHTML = '';
+  (state.armazenagem || []).forEach((r, i) => {
+    const div = document.createElement('div'); div.className = 'status-line';
+    div.innerHTML = `<input data-arm="item" data-idx="${i}" value="${safe(r.item)}"><select data-arm="status" data-idx="${i}">${statusOptions.map(o => `<option ${o === r.status ? 'selected' : ''}>${o}</option>`).join('')}</select><button class="btn secondary small" onclick="removeArmRow(${i})">×</button>`;
+    list.appendChild(div);
+  });
+}
+function renderAreas() {
+  const grid = $('areasGrid'); grid.innerHTML = '';
+  (state.areas || []).forEach((r, i) => {
+    const card = document.createElement('div'); card.className = 'area-card';
+    card.innerHTML = `<h3><input data-area="area" data-idx="${i}" value="${safe(r.area)}" style="font-weight:950;text-transform:uppercase;background:transparent;border:0;padding:0;width:calc(100% - 48px)"><button class="btn secondary small" style="float:right" onclick="removeAreaRow(${i})">×</button></h3>
+      <div class="area-cols"><div><label>Início</label><textarea data-area="inicio" data-idx="${i}">${safe(r.inicio)}</textarea></div><div><label>Final</label><textarea data-area="final" data-idx="${i}">${safe(r.final)}</textarea></div></div>`;
+    grid.appendChild(card);
+  });
+}
+function collectState() {
+  state.shift = $('shift').value; state.date = $('date').value; state.title = $('title').value; state.responsavel = $('responsavel').value; updateHeaderTitle();
+  for (const [key] of kpiConfig) state.kpis[key] = $('kpi_' + key)?.value || '';
+  ['dotT1V3','dotT1V4','dotDiaV3','dotDiaV4','dotSemanaV3','dotSemanaV4'].forEach(k => state.kpis[k] = $('kpi_' + k)?.value || '');
+  document.querySelectorAll('[data-hourly]').forEach(el => { const i = +el.dataset.idx; const k = el.dataset.hourly; if (state.hourly[i]) state.hourly[i][k] = el.value; });
+  document.querySelectorAll('[data-retro]').forEach(el => { const i = +el.dataset.idx; const k = el.dataset.retro; if (state.retro[i]) state.retro[i][k] = el.value; });
+  document.querySelectorAll('[data-arm]').forEach(el => { const i = +el.dataset.idx; const k = el.dataset.arm; if (state.armazenagem[i]) state.armazenagem[i][k] = el.value; });
+  document.querySelectorAll('[data-area]').forEach(el => { const i = +el.dataset.idx; const k = el.dataset.area; if (state.areas[i]) state.areas[i][k] = el.value; });
+  state.acoes = $('acoes').value; state.principaisT1 = $('principaisT1').value; state.ootLoss = $('ootLoss').value; state.areaLoss = $('areaLoss').value;
+  state.inbound = {programado:$('in_programado').value,antecT3:$('in_antecT3').value,atrasados:$('in_atrasados').value,antecT2:$('in_antecT2').value,recebidos:$('in_recebidos').value,bolsao:$('in_bolsao').value,obs:$('in_obs').value};
+  state.previousDay = {expedidos:$('prevExp').value, perdas:$('prevLoss').value}; state.currentDay = {expedidos:$('curExp').value, perdas:$('curLoss').value};
+}
+function addHourlyRow() { collectState(); state.hourly.push({hora:'',dot:'',pcts:'',perdas:''}); renderHourly(); saveLocal(); }
+function removeHourlyRow(i) { collectState(); state.hourly.splice(i, 1); renderHourly(); saveLocal(); }
+function addArmRow() { collectState(); state.armazenagem.push({item:'',status:'Controlado'}); renderStatus(); saveLocal(); }
+function removeArmRow(i) { collectState(); state.armazenagem.splice(i, 1); renderStatus(); saveLocal(); }
+function addAreaRow() { collectState(); state.areas.push({area:'',inicio:'',final:''}); renderAreas(); saveLocal(); }
+function removeAreaRow(i) { collectState(); state.areas.splice(i, 1); renderAreas(); saveLocal(); }
+function parseLosses(text) {
+  const arr = [];
+  String(text || '').split(/[\/\n;]/).map(s => s.trim()).filter(Boolean).forEach(part => {
+    const m = part.match(/^(\d+(?:[.,]\d+)?)\s*(?:>|-|–)?\s*(.+)$/i);
+    if (m) arr.push({qty:n(m[1]), desc:m[2].trim().replace(/^[-–>\s]+/, '')});
+  });
+  return arr;
+}
+function aggregateLosses() {
+  const map = new Map();
+  for (const r of state.hourly || []) {
+    for (const l of parseLosses(r.perdas)) {
+      const key = l.desc.replace(/\s+/g, ' ').trim(); const simple = key.toUpperCase();
+      const old = map.get(simple) || {qty:0, desc:key}; old.qty += l.qty; map.set(simple, old);
+    }
+  }
+  return [...map.values()].sort((a, b) => b.qty - a.qty);
+}
+function buildTopLosses(updateText = false) {
+  collectState(); const top = aggregateLosses().slice(0, 8); const text = top.map(x => `${Math.round(x.qty)} > ${x.desc}`).join('\n');
+  if (updateText) { $('principaisT1').value = text; state.principaisT1 = text; saveLocal(); }
+  return text;
+}
+function dotFrom(exp, loss) { const e = n(exp), l = n(loss); return e > 0 ? ((e - l) / e * 100) : 0; }
+function updateCalculations() {
+  collectState();
+  for (const [key,,kind] of kpiConfig) {
+    const card = $('card_' + key); if (!card) continue; card.classList.remove('good','bad','neutral'); const val = n(state.kpis[key]);
+    if (kind === 'dot') card.classList.add(val >= 98 ? 'good' : 'bad'); else if (key === 'absT1') card.classList.add(val <= 4 ? 'good' : 'bad'); else card.classList.add('neutral');
+  }
+  let totalP = 0, weighted = 0, totalParsed = 0, worst = null;
+  for (const r of state.hourly || []) {
+    const p = n(r.pcts), d = n(r.dot); totalP += p; weighted += p * d;
+    const losses = parseLosses(r.perdas).reduce((s, x) => s + x.qty, 0); totalParsed += losses;
+    if ((r.dot || r.hora) && (!worst || d < worst.dot)) worst = {hora:r.hora, dot:d};
+  }
+  const avg = totalP ? weighted / totalP : 0;
+  state.metrics = {avgDot:pct(avg), totalPcts:intFmt(totalP), totalParsedLoss:intFmt(totalParsed), worstHour: worst && worst.hora ? `${worst.hora} (${pct(worst.dot)})` : '-'};
+  state.statusResumo = avg >= 98 ? 'Dentro da meta' : 'Abaixo da meta';
+  $('avgDot').textContent = pct(avg); $('totalPcts').textContent = intFmt(totalP); $('totalParsedLoss').textContent = intFmt(totalParsed); $('worstHour').textContent = state.metrics.worstHour;
+  $('avgDotCard').className = 'mini-card ' + (avg >= 98 ? 'good' : 'bad'); $('worstHourCard').className = 'mini-card ' + (worst && worst.dot >= 98 ? 'good' : 'bad');
+  document.querySelectorAll('[data-retro="dif"]').forEach(el => { const i = +el.dataset.idx; const row = state.retro[i]; const dif = n(row.atual) - n(row.fech); el.value = (row.atual !== '' && row.fech !== '') ? dif.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) : ''; state.retro[i].dif = el.value; });
+  const pd = dotFrom(state.previousDay.expedidos, state.previousDay.perdas), cd = dotFrom(state.currentDay.expedidos, state.currentDay.perdas);
+  $('prevDot').textContent = 'DOT ' + pct(pd); $('curDot').textContent = 'DOT ' + pct(cd);
+  $('prevDot').style.background = pd >= 98 ? 'var(--green-bg)' : 'var(--red-bg)'; $('prevDot').style.color = pd >= 98 ? 'var(--green)' : 'var(--red)';
+  $('curDot').style.background = cd >= 98 ? 'var(--green-bg)' : 'var(--red-bg)'; $('curDot').style.color = cd >= 98 ? 'var(--green)' : 'var(--red)';
+  document.querySelectorAll('[data-arm="status"]').forEach(sel => { const v = sel.value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); sel.className = 'status-chip ' + (v.includes('controlado') ? 'chip-controlado' : v.includes('saturado') || v.includes('critico') ? 'chip-saturado' : v.includes('finalizado') ? 'chip-finalizado' : 'chip-pendente'); });
+  $('summaryBox').textContent = generateSummary();
+}
+function generateSummary() {
+  const k = state.kpis; const pTop = state.principaisT1 || buildTopLosses(false); const pd = dotFrom(state.previousDay.expedidos, state.previousDay.perdas), cd = dotFrom(state.currentDay.expedidos, state.currentDay.perdas);
+  return `🚛 ${state.title || 'FECHAMENTO'} - ${dateBR()} 🚛\n\nTURNO: ${state.shift}\nRESPONSÁVEL: ${state.responsavel || '-'}\n\nABS ${state.shift}: ${pct(k.absT1)}\nDOT ${state.shift}: ${pct(k.dotT1)} | OOT ${state.shift}: ${pct(k.ootT1)}\nV3: ${pct(k.dotT1V3)} | V4: ${pct(k.dotT1V4)}\n\nDOT DIA: ${pct(k.dotDia)} | OOT DIA: ${pct(k.ootDia)}\nV3 DIA: ${pct(k.dotDiaV3)} | V4 DIA: ${pct(k.dotDiaV4)}\n\nDOT SEMANA: ${pct(k.dotSemana)}\n\n📍 PRINCIPAIS PERDAS ${state.shift}\n${pTop || '-'}\n\n📌 AÇÕES E OBSERVAÇÕES\n${state.acoes || '-'}\n\n📍 PERDA OOT ${state.shift}\n${state.ootLoss || '-'}\n\n📍 PRINCIPAIS PERDAS x ÁREA\n${state.areaLoss || '-'}\n\nDIA ANTERIOR: Exp. ${intFmt(state.previousDay.expedidos)} | Perdas ${intFmt(state.previousDay.perdas)} | DOT ${pct(pd)}\nATUAL: Exp. ${intFmt(state.currentDay.expedidos)} | Perdas ${intFmt(state.currentDay.perdas)} | DOT ${pct(cd)}`;
+}
+async function copySummary() { collectState(); updateCalculations(); const text = generateSummary(); try { await navigator.clipboard.writeText(text); $('saveStatus').textContent = 'Resumo copiado para área de transferência'; } catch(e) { prompt('Copie o fechamento:', text); } }
+function exportJson() { collectState(); updateCalculations(); downloadBlob(new Blob([JSON.stringify(state, null, 2)], {type:'application/json'}), `fechamento_${state.shift}_${state.date || 'sem-data'}.json`); }
+function importJson(ev) { const file = ev.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { state = mergeDeep(clone(DEFAULT_DATA), JSON.parse(reader.result)); renderAll(); saveLocal(); } catch(e) { alert('Arquivo inválido.'); } }; reader.readAsText(file, 'utf-8'); }
+function downloadBlob(blob, filename) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
+function clearAll() { if (!confirm('Deseja limpar todos os campos e iniciar um novo fechamento?')) return; const oldResp = state.responsavel; state = clone(DEFAULT_DATA); state.date = todayISO(); state.responsavel = oldResp; renderAll(); saveLocal(); }
+
+function loadAppInfo() {
+  if (typeof google === 'undefined' || !google.script) return;
+  google.script.run.withSuccessHandler(info => { appInfo = info; $('sheetLink').innerHTML = `Base: <a href="${info.spreadsheetUrl}" target="_blank">abrir Google Sheets</a><br>Usuário: ${info.user || '-'}`; }).withFailureHandler(err => { $('sheetLink').textContent = 'Não foi possível carregar a base: ' + err.message; }).getAppInfo();
+}
+function saveOnline() {
+  collectState(); updateCalculations(); $('saveStatus').textContent = 'Salvando no Google Sheets...';
+  if (typeof google === 'undefined' || !google.script) { alert('Este botão funciona apenas quando publicado pelo Google Apps Script.'); return; }
+  google.script.run.withSuccessHandler(res => { state.id = res.id; saveLocal(); $('saveStatus').textContent = 'Salvo online em ' + res.savedAt; loadHistory(); }).withFailureHandler(err => { $('saveStatus').textContent = 'Erro ao salvar'; alert('Erro ao salvar: ' + err.message); }).saveFechamento(state);
+}
+function loadHistory() {
+  if (typeof google === 'undefined' || !google.script) return;
+  const box = $('historyList'); box.innerHTML = '<p class="note">Carregando histórico...</p>';
+  google.script.run.withSuccessHandler(items => renderHistory(items)).withFailureHandler(err => { box.innerHTML = '<p class="note">Erro ao carregar histórico: ' + escHtml(err.message) + '</p>'; }).listFechamentos(12);
+}
+function renderHistory(items) {
+  const box = $('historyList');
+  if (!items || !items.length) { box.innerHTML = '<p class="note">Nenhum fechamento salvo ainda.</p>'; return; }
+  box.innerHTML = items.map(item =>
+    `<div class="history-card">
+      <strong>${escHtml(item.title || 'Fechamento')} • ${escHtml(item.date || '-')} • ${escHtml(item.shift || '-')}</strong>
+      <small>Atualizado: ${escHtml(item.updatedAt || '-')} • ${escHtml(item.user || '-')}</small>
+      <small>DOT T: ${escHtml(item.dotT1 || '-')} | OOT: ${escHtml(item.ootT1 || '-')} | HH: ${escHtml(item.avgDot || '-')}</small>
+      <div class="history-actions">
+        <button class="btn secondary small" data-action="open" data-id="${escHtml(item.id)}">Abrir</button>
+        <button class="btn danger small" data-action="delete" data-id="${escHtml(item.id)}">Excluir</button>
+      </div>
+    </div>`
+  ).join('');
+
+  if (!_historyListenerAdded) {
+    box.addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      if (btn.dataset.action === 'open') openHistory(id);
+      else if (btn.dataset.action === 'delete') deleteHistory(id);
+    });
+    _historyListenerAdded = true;
+  }
+}
+function openHistory(id) {
+  if (!confirm('Abrir este fechamento? O rascunho atual será substituído.')) return;
+  google.script.run.withSuccessHandler(payload => { state = mergeDeep(clone(DEFAULT_DATA), payload); renderAll(); saveLocal(); $('saveStatus').textContent = 'Fechamento carregado do histórico'; }).withFailureHandler(err => alert('Erro ao abrir: ' + err.message)).getFechamento(id);
+}
+function deleteHistory(id) {
+  if (!confirm('Excluir este fechamento do histórico?')) return;
+  google.script.run.withSuccessHandler(() => { loadHistory(); $('saveStatus').textContent = 'Fechamento excluído'; }).withFailureHandler(err => alert('Erro ao excluir: ' + err.message)).deleteFechamento(id);
+}
+
+function statusClass(status = '') {
+  const v = String(status).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  if (v.includes('controlado')) return 'good'; if (v.includes('saturado') || v.includes('critico')) return 'bad'; if (v.includes('finalizado')) return 'info'; return 'mid';
+}
+function kpiPrintClass(kind, value, key) { const val = n(value); if (kind === 'dot') return val >= 98 ? 'good' : 'bad'; if (key === 'absT1') return val <= 4 ? 'good' : 'bad'; return 'neutral'; }
+function formatLossText(text) { return escHtml(String(text || '-').replace(/\s*\/\s*/g, ' • ')); }
+function buildPrintReport() {
+  collectState(); updateHeaderTitle(); const k = state.kpis; const totalP = (state.hourly || []).reduce((s, r) => s + n(r.pcts), 0); const weighted = (state.hourly || []).reduce((s, r) => s + n(r.pcts) * n(r.dot), 0); const avgDot = totalP ? weighted / totalP : 0; const totalLoss = (state.hourly || []).reduce((s, r) => s + parseLosses(r.perdas).reduce((a, x) => a + x.qty, 0), 0); const worst = (state.hourly || []).filter(r => String(r.hora || r.dot).trim()).reduce((w, r) => !w || n(r.dot) < n(w.dot) ? r : w, null); const pd = dotFrom(state.previousDay.expedidos, state.previousDay.perdas), cd = dotFrom(state.currentDay.expedidos, state.currentDay.perdas);
+  const kpiHtml = kpiConfig.map(([key, label, kind, subs]) => { const subText = subs.length ? subs.map(([skey, slabel]) => `${slabel}: ${pct(k[skey])}`).join(' • ') : ''; return `<div class="pr-kpi ${kpiPrintClass(kind, k[key], key)}"><span class="pr-label">${escHtml(label)}</span><div class="pr-value">${pct(k[key])}</div>${subText ? `<small>${escHtml(subText)}</small>` : ''}</div>`; }).join('');
+  const hourlyHtml = (state.hourly || []).map(r => `<tr><td>${escHtml(r.hora || '-')}</td><td class="num">${pct(r.dot)}</td><td class="num">${intFmt(r.pcts)}</td><td>${formatLossText(r.perdas)}</td></tr>`).join('');
+  const retroHtml = (state.retro || []).filter(r => String(r.data || r.fech || r.atual || r.dif).trim()).map(r => `<tr><td>${escHtml(r.data)}</td><td class="num">${r.fech === '' ? '-' : pct(r.fech)}</td><td class="num">${r.atual === '' ? '-' : pct(r.atual)}</td><td class="num">${escHtml(r.dif || '-')}</td></tr>`).join('');
+  const statusHtml = (state.armazenagem || []).map(r => `<div class="pr-status"><b>${escHtml(r.item || '-')}</b><span class="pr-chip ${statusClass(r.status)}">${escHtml(r.status || '-')}</span></div>`).join('');
+  const inboundHtml = `<div class="pr-mini-metrics"><div><span class="pr-label">Programado</span><strong>${intFmt(state.inbound.programado)}</strong></div><div><span class="pr-label">Recebidos</span><strong>${intFmt(state.inbound.recebidos)}</strong></div><div><span class="pr-label">Atrasados</span><strong>${intFmt(state.inbound.atrasados)}</strong></div><div><span class="pr-label">Antec. T3</span><strong>${intFmt(state.inbound.antecT3)}</strong></div><div><span class="pr-label">Antec. T2</span><strong>${intFmt(state.inbound.antecT2)}</strong></div><div><span class="pr-label">Bolsão</span><strong>${intFmt(state.inbound.bolsao)}</strong></div></div>${state.inbound.obs ? `<div class="pr-text compact" style="margin-top:3px">${escHtml(state.inbound.obs)}</div>` : ''}`;
+  const areasHtml = (state.areas || []).map(a => `<tr><td><b>${escHtml(a.area || '-')}</b></td><td>${escHtml(a.inicio || '-')}</td><td>${escHtml(a.final || '-')}</td></tr>`).join('');
+  $('printReport').innerHTML = `<div class="pr-sheet"><div class="pr-header"><div class="pr-title-box"><h2>${escHtml(state.title || 'FECHAMENTO')} ${dateBR() ? '• ' + escHtml(dateBR()) : ''}</h2><p>Visão gerencial em página única • sistema online • ${escHtml(state.responsavel || '')}</p></div><div class="pr-meta"><div><span class="pr-label">Turno</span><span class="pr-big">${escHtml(state.shift || '-')}</span></div><div><span class="pr-label">DOT médio HH</span><span class="pr-big">${pct(avgDot)}</span></div><div><span class="pr-label">Hora crítica</span><span class="pr-big">${worst ? `${escHtml(worst.hora || '-')} ${pct(worst.dot)}` : '-'}</span></div></div></div><div class="pr-kpis">${kpiHtml}</div><div class="pr-main"><div class="pr-card"><div class="pr-card-title"><span>DOT hora a hora</span><span>PCTS ${intFmt(totalP)} • perdas ${intFmt(totalLoss)}</span></div><div class="pr-card-body"><table class="pr-table"><thead><tr><th>Hora</th><th>DOT</th><th>PCTS</th><th>Maiores perdas</th></tr></thead><tbody>${hourlyHtml}</tbody></table></div></div><div class="pr-right"><div class="pr-card"><div class="pr-card-title">Principais perdas ${escHtml(state.shift || '')}</div><div class="pr-card-body pr-text">${escHtml(state.principaisT1 || buildTopLosses(false) || '-')}</div></div><div class="pr-card"><div class="pr-card-title">Ações e observações</div><div class="pr-card-body pr-text compact">${escHtml(state.acoes || '-')}</div></div><div class="pr-card"><div class="pr-card-title">Perda OOT ${escHtml(state.shift || '')}</div><div class="pr-card-body pr-text compact">${escHtml(state.ootLoss || '-')}</div></div><div class="pr-card"><div class="pr-card-title">Perdas x área</div><div class="pr-card-body pr-text compact">${escHtml(state.areaLoss || '-')}</div></div></div></div><div class="pr-bottom"><div class="pr-card"><div class="pr-card-title">Armazenagem</div><div class="pr-card-body"><div class="pr-status-grid">${statusHtml}</div></div></div><div class="pr-card"><div class="pr-card-title">Inbound</div><div class="pr-card-body">${inboundHtml}</div></div><div class="pr-card"><div class="pr-card-title">Status processamento</div><div class="pr-card-body"><table class="pr-table"><thead><tr><th>Área</th><th>Início</th><th>Final</th></tr></thead><tbody>${areasHtml}</tbody></table></div></div><div class="pr-card"><div class="pr-card-title">Retroativo / dia</div><div class="pr-card-body"><table class="pr-table"><thead><tr><th>Data</th><th>Fech.</th><th>Atual</th><th>Dif.</th></tr></thead><tbody>${retroHtml}</tbody></table><div class="pr-mini-metrics" style="margin-top:3px;grid-template-columns:1fr 1fr"><div><span class="pr-label">Dia anterior</span><strong>${pct(pd)}</strong><small>Exp. ${intFmt(state.previousDay.expedidos)} • P ${intFmt(state.previousDay.perdas)}</small></div><div><span class="pr-label">Atual</span><strong>${pct(cd)}</strong><small>Exp. ${intFmt(state.currentDay.expedidos)} • P ${intFmt(state.currentDay.perdas)}</small></div></div></div></div></div><div class="pr-footer"><span>Regra visual: DOT/OOT verde a partir de 98%.</span><span>Gerado em ${new Date().toLocaleString('pt-BR')}</span></div></div>`;
+}
+function fitPrintReportToOnePage() {
+  buildPrintReport();
+  $('printReport').style.setProperty('--print-scale', '.86');
+}
+function printPdf() {
+  _buildingPrint = true;
+  fitPrintReportToOnePage();
+  setTimeout(() => { window.print(); _buildingPrint = false; }, 50);
+}
+window.addEventListener('beforeprint', () => {
+  if (!_buildingPrint) fitPrintReportToOnePage();
+});
+window.addEventListener('load', initLogin);
+</script>
+</body>
+</html>
