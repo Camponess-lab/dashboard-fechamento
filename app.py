@@ -395,42 +395,48 @@ td {{ border:1px solid #ddd; padding:4px; vertical-align:top; }}
 
 
 def style_page():
-    # CSS com contraste fixo para evitar letras sumindo quando o usuário alterna
-    # o tema do Streamlit entre light/dark. A área principal fica sempre legível.
+    # CSS com contraste fixo + visual gerencial mais moderno.
+    # A ideia é manter o dashboard bonito e legível mesmo quando o usuário troca Dark/Light.
     st.markdown(
         f"""
         <style>
         :root {{
-            --dash-bg: #F5F5F5;
-            --dash-card: #FFFFFF;
-            --dash-text: #111111;
-            --dash-muted: #555555;
-            --dash-border: #E7E7E7;
-            --dash-yellow: #FFE600;
-            --dash-green: {GREEN};
-            --dash-red: {RED};
+            --ml-yellow: #FFE600;
+            --ml-yellow-soft: #FFF7B8;
+            --ml-blue: #3483FA;
+            --ink: #101114;
+            --muted: #667085;
+            --line: #E7E7EA;
+            --surface: #FFFFFF;
+            --surface-2: #F7F8FA;
+            --green: {GREEN};
+            --red: {RED};
+            --amber: #F59E0B;
+            --shadow: 0 14px 38px rgba(16, 17, 20, .08);
+            --radius: 22px;
         }}
 
-        /* Base do app: mantém o dashboard claro e legível mesmo se o tema global virar dark */
         .stApp {{
-            background: var(--dash-bg) !important;
-            color: var(--dash-text) !important;
+            background:
+                radial-gradient(circle at top left, rgba(255,230,0,.26), transparent 28rem),
+                linear-gradient(135deg, #FAFAFA 0%, #F2F4F7 100%) !important;
+            color: var(--ink) !important;
         }}
         .main .block-container {{
-            padding-top: 1.4rem;
-            padding-bottom: 2rem;
+            padding-top: 1.1rem;
+            padding-bottom: 2.2rem;
+            max-width: 1500px;
         }}
 
-        /* Textos gerais do conteúdo principal */
         .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6,
         .stApp p, .stApp label, .stApp span, .stApp small,
         .stApp div[data-testid="stMarkdownContainer"] {{
-            color: var(--dash-text) !important;
+            color: var(--ink) !important;
         }}
 
-        /* Sidebar fica escura de propósito, mas com contraste garantido */
         [data-testid="stSidebar"] {{
-            background: #111111 !important;
+            background: linear-gradient(180deg, #111111 0%, #202124 100%) !important;
+            border-right: 1px solid rgba(255,255,255,.12);
         }}
         [data-testid="stSidebar"] *,
         [data-testid="stSidebar"] div[data-testid="stMarkdownContainer"],
@@ -439,117 +445,233 @@ def style_page():
         [data-testid="stSidebar"] span {{
             color: #FFFFFF !important;
         }}
+        [data-testid="stSidebar"] .stTextInput input,
+        [data-testid="stSidebar"] .stNumberInput input,
+        [data-testid="stSidebar"] .stDateInput input,
+        [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] > div {{
+            background: #FFFFFF !important;
+            color: #111111 !important;
+        }}
 
-        /* Campos de preenchimento: fundo claro e fonte escura em qualquer tema */
         .stTextInput input, .stNumberInput input, .stTextArea textarea,
         .stDateInput input, .stSelectbox div[data-baseweb="select"] > div,
         [data-testid="stFileUploader"] section {{
             background: #FFFFFF !important;
             color: #111111 !important;
-            border-color: #D9D9D9 !important;
+            border: 1px solid #D9DDE3 !important;
+            border-radius: 12px !important;
         }}
-        .stTextInput input::placeholder, .stTextArea textarea::placeholder {{
-            color: #777777 !important;
-        }}
+        .stTextInput input::placeholder, .stTextArea textarea::placeholder {{ color: #777 !important; }}
         .stSelectbox div[data-baseweb="select"] span,
-        .stSelectbox div[data-baseweb="select"] svg {{
-            color: #111111 !important;
-            fill: #111111 !important;
-        }}
+        .stSelectbox div[data-baseweb="select"] svg {{ color: #111 !important; fill: #111 !important; }}
 
-        /* Botões com contraste fixo */
         .stButton button, .stDownloadButton button {{
-            background: var(--dash-yellow) !important;
+            background: linear-gradient(180deg, #FFE600, #F4D900) !important;
             color: #111111 !important;
-            border: 1px solid #E2D000 !important;
-            font-weight: 800 !important;
-            border-radius: 10px !important;
+            border: 1px solid #D6C400 !important;
+            font-weight: 900 !important;
+            border-radius: 14px !important;
+            box-shadow: 0 8px 20px rgba(0,0,0,.08) !important;
+            min-height: 44px;
         }}
-        .stButton button *, .stDownloadButton button * {{
-            color: #111111 !important;
+        .stButton button:hover, .stDownloadButton button:hover {{
+            filter: brightness(.98);
+            transform: translateY(-1px);
         }}
+        .stButton button *, .stDownloadButton button * {{ color: #111 !important; }}
 
-        /* Métricas: o problema principal no tema dark era texto branco sobre card branco */
+        button[data-baseweb="tab"] {{
+            background: rgba(255,255,255,.65) !important;
+            border-radius: 999px !important;
+            margin-right: 6px !important;
+            border: 1px solid rgba(16,17,20,.06) !important;
+        }}
+        button[data-baseweb="tab"] p {{ color: #111 !important; font-weight: 900 !important; }}
+
         div[data-testid="stMetric"] {{
             background: #FFFFFF !important;
-            border: 1px solid #E6E6E6 !important;
-            padding: 12px !important;
-            border-radius: 16px !important;
-            box-shadow: 0 8px 22px rgba(0,0,0,.04) !important;
+            border: 1px solid #E6E8ED !important;
+            padding: 14px !important;
+            border-radius: 18px !important;
+            box-shadow: var(--shadow) !important;
         }}
-        div[data-testid="stMetric"] *,
-        div[data-testid="stMetricLabel"],
-        div[data-testid="stMetricValue"] {{
-            color: #111111 !important;
-        }}
+        div[data-testid="stMetric"] *, div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"] {{ color: #111 !important; }}
 
-        /* Abas e tabelas */
-        button[data-baseweb="tab"] p {{
-            color: #111111 !important;
-            font-weight: 700 !important;
-        }}
         div[data-testid="stDataFrame"], div[data-testid="stDataEditor"] {{
             background: #FFFFFF !important;
             color: #111111 !important;
-            border-radius: 12px !important;
+            border-radius: 18px !important;
+            border: 1px solid #E6E8ED !important;
+            overflow: hidden;
+            box-shadow: 0 10px 28px rgba(16,17,20,.04) !important;
         }}
-
-        /* Blocos de código / resumo WhatsApp */
         div[data-testid="stCodeBlock"], div[data-testid="stCodeBlock"] pre, div[data-testid="stCodeBlock"] code {{
             background: #FFFFFF !important;
             color: #111111 !important;
-            border: 1px solid #E6E6E6 !important;
+            border: 1px solid #E6E8ED !important;
+            border-radius: 16px !important;
         }}
+        .stAlert, .stAlert * {{ color: #111111 !important; }}
 
-        .title-box {{
-            background: linear-gradient(90deg, #FFE600, #FFF7A6) !important;
-            color: #111111 !important;
-            padding: 18px 22px;
-            border-radius: 18px;
-            border: 1px solid #E2D000;
+        .hero {{
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #111111 0%, #232323 46%, #3A3420 100%) !important;
+            border: 1px solid rgba(255,255,255,.10);
+            border-radius: 28px;
+            padding: 24px 26px;
             margin-bottom: 18px;
+            box-shadow: 0 22px 55px rgba(16,17,20,.16);
         }}
-        .title-box, .title-box * {{
-            color: #111111 !important;
+        .hero:after {{
+            content: "";
+            position: absolute;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            right: -80px;
+            top: -120px;
+            background: rgba(255,230,0,.35);
+            filter: blur(2px);
         }}
-        .title-box h1 {{
-            margin: 0;
-            font-size: 28px;
+        .hero .eyebrow {{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,230,0,.16);
+            color: #FFE600 !important;
+            border: 1px solid rgba(255,230,0,.32);
+            border-radius: 999px;
+            padding: 7px 12px;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: .3px;
+            text-transform: uppercase;
         }}
-        .title-box p {{
-            margin: 4px 0 0;
-            font-weight: 700;
+        .hero h1 {{
+            margin: 13px 0 6px;
+            color: #FFFFFF !important;
+            font-size: 34px;
+            line-height: 1.06;
+            letter-spacing: -0.8px;
         }}
-
-        .clean-card {{
-            background: #FFFFFF !important;
-            color: #111111 !important;
-            border: 1px solid #E7E7E7;
+        .hero p {{ color: #E9EDF3 !important; margin: 0; font-weight: 700; }}
+        .hero .hero-grid {{
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 18px;
+            max-width: 760px;
+        }}
+        .hero-stat {{
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.14);
             border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: 0 8px 22px rgba(0,0,0,.035);
+            padding: 11px 13px;
+            backdrop-filter: blur(8px);
         }}
-        .clean-card * {{
-            color: #111111 !important;
-        }}
-        .status-ok, .clean-card .status-ok {{
-            color: var(--dash-green) !important;
-            font-weight: 900 !important;
-        }}
-        .status-bad, .clean-card .status-bad {{
-            color: var(--dash-red) !important;
-            font-weight: 900 !important;
-        }}
+        .hero-stat span {{ color: #C9CED7 !important; font-size: 11px; font-weight: 800; text-transform: uppercase; }}
+        .hero-stat b {{ color: #FFFFFF !important; display:block; font-size: 17px; margin-top: 2px; }}
 
-        .stAlert, .stAlert * {{
-            color: #111111 !important;
+        .kpi-grid-modern {{
+            display:grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
+            margin: 12px 0 18px;
+        }}
+        .metric-card {{
+            background: var(--surface) !important;
+            color: var(--ink) !important;
+            border: 1px solid #E6E8ED;
+            border-radius: 22px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+            min-height: 118px;
+            position: relative;
+            overflow: hidden;
+        }}
+        .metric-card:before {{
+            content:"";
+            position:absolute;
+            left:0;
+            top:0;
+            bottom:0;
+            width: 6px;
+            background: var(--ml-blue);
+        }}
+        .metric-card.ok:before {{ background: var(--green); }}
+        .metric-card.bad:before {{ background: var(--red); }}
+        .metric-card.warn:before {{ background: var(--amber); }}
+        .metric-card.neutral:before {{ background: var(--ml-blue); }}
+        .metric-card .label {{ color: #667085 !important; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .25px; }}
+        .metric-card .value {{ color: #101114 !important; font-size: 30px; font-weight: 1000; line-height: 1; margin-top: 10px; letter-spacing: -1px; }}
+        .metric-card .caption {{ color: #667085 !important; font-size: 12px; font-weight: 800; margin-top: 8px; }}
+        .metric-card .pill {{
+            position:absolute;
+            top: 13px;
+            right: 13px;
+            border-radius: 999px;
+            padding: 5px 9px;
+            font-size: 11px;
+            font-weight: 1000;
+        }}
+        .metric-card.ok .pill {{ background: rgba(0,166,80,.10); color: var(--green) !important; }}
+        .metric-card.bad .pill {{ background: rgba(209,36,47,.10); color: var(--red) !important; }}
+        .metric-card.warn .pill {{ background: rgba(245,158,11,.13); color: var(--amber) !important; }}
+        .metric-card.neutral .pill {{ background: rgba(52,131,250,.10); color: var(--ml-blue) !important; }}
+
+        .section-card {{
+            background: rgba(255,255,255,.92) !important;
+            border: 1px solid #E6E8ED;
+            border-radius: 24px;
+            padding: 18px;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow);
+        }}
+        .section-card h3 {{
+            margin: 0 0 12px !important;
+            font-size: 18px !important;
+            letter-spacing: -.2px;
+        }}
+        .section-card .subtle {{ color: #667085 !important; font-size: 12px; font-weight: 800; }}
+        .insight-list {{ display: flex; flex-direction: column; gap: 9px; }}
+        .insight {{
+            display:flex;
+            justify-content:space-between;
+            gap: 10px;
+            background: #F8FAFC;
+            border: 1px solid #EAECF0;
+            border-radius: 16px;
+            padding: 11px 12px;
+            font-weight: 800;
+        }}
+        .insight span {{ color:#667085 !important; font-size: 12px; }}
+        .insight b {{ color:#101114 !important; }}
+        .text-box {{
+            background: #F8FAFC;
+            border: 1px solid #EAECF0;
+            border-radius: 16px;
+            padding: 12px;
+            white-space: pre-wrap;
+            font-size: 13px;
+            line-height: 1.36;
+            color:#101114 !important;
+            max-height: 330px;
+            overflow: auto;
+        }}
+        .status-ok {{ color: var(--green) !important; font-weight: 1000 !important; }}
+        .status-bad {{ color: var(--red) !important; font-weight: 1000 !important; }}
+        .status-warn {{ color: var(--amber) !important; font-weight: 1000 !important; }}
+        .divider-soft {{ height:1px; background:#E6E8ED; margin: 14px 0; }}
+
+        @media (max-width: 1100px) {{
+            .kpi-grid-modern {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+            .hero .hero-grid {{ grid-template-columns: 1fr; }}
         }}
         </style>
         """,
         unsafe_allow_html=True,
     )
-
 
 def sidebar(dados):
     st.sidebar.title("🚛 Fechamento")
@@ -585,21 +707,122 @@ def kpi_editor(dados):
             dados["kpis"][key] = st.number_input(key, value=float(num(dados["kpis"].get(key, 0))), step=0.01, format="%.2f", key=f"kpi_{key}")
 
 
+
+def safe(v):
+    return html.escape(str(v if v is not None else ""))
+
+
+def metric_status(name, value, meta):
+    name_u = str(name).upper()
+    v = num(value)
+    if "ABS" in name_u:
+        if v <= 4:
+            return "ok", "OK"
+        if v <= 13:
+            return "warn", "ATENÇÃO"
+        return "bad", "CRÍTICO"
+    if "DOT" in name_u or "OOT" in name_u or "V3" in name_u or "V4" in name_u:
+        return ("ok", "META") if v >= meta else ("bad", "ABAIXO")
+    return "neutral", "INFO"
+
+
+def render_metric_card(label, value, status="neutral", pill="INFO", caption=""):
+    return f"""
+    <div class="metric-card {status}">
+      <div class="pill">{safe(pill)}</div>
+      <div class="label">{safe(label)}</div>
+      <div class="value">{safe(value)}</div>
+      <div class="caption">{safe(caption)}</div>
+    </div>
+    """
+
+
+def render_hero(dados, avg, total_pcts, total_perdas):
+    try:
+        data_br = datetime.fromisoformat(str(dados.get("data", ""))).strftime("%d/%m/%Y")
+    except Exception:
+        data_br = str(dados.get("data", ""))
+    meta = num(dados.get("meta_dot", 98))
+    return f"""
+    <div class="hero">
+      <div class="eyebrow">🚛 Fechamento gerencial</div>
+      <h1>{safe(dados.get('titulo','FECHAMENTO'))}</h1>
+      <p>Visão clean para liderança • preenchimento operacional • PDF em 1 página</p>
+      <div class="hero-grid">
+        <div class="hero-stat"><span>Data / Turno</span><b>{safe(data_br)} • {safe(dados.get('turno','T1'))}</b></div>
+        <div class="hero-stat"><span>DOT hora a hora</span><b>{safe(pct(avg))}</b></div>
+        <div class="hero-stat"><span>Volume monitorado</span><b>{safe(br_int(total_pcts))} pcts • {safe(br_int(total_perdas))} perdas</b></div>
+      </div>
+    </div>
+    """
+
+
+def render_insight_row(label, value, extra=""):
+    return f"""<div class="insight"><div><span>{safe(label)}</span><br><b>{safe(value)}</b></div><div>{extra}</div></div>"""
+
+
+def build_metric_grid(dados, hourly_df):
+    meta = num(dados.get("meta_dot", 98))
+    k = dados.get("kpis", {})
+    avg = weighted_dot(hourly_df)
+    total_pcts = pd.to_numeric(hourly_df.get("PCTS", pd.Series(dtype=float)), errors="coerce").fillna(0).sum() if not hourly_df.empty else 0
+    total_perdas = total_hourly_losses(hourly_df)
+    dot_at = calc_dot_from_exp_loss(dados["dia_atual"].get("Expedidos", 0), dados["dia_atual"].get("Perdas", 0))
+    items = [
+        ("DOT T1", pct(k.get("DOT T1", 0)), *metric_status("DOT T1", k.get("DOT T1", 0), meta), f"Meta {pct(meta)}"),
+        ("OOT T1", pct(k.get("OOT T1", 0)), *metric_status("OOT T1", k.get("OOT T1", 0), meta), f"Meta {pct(meta)}"),
+        ("DOT DIA", pct(k.get("DOT DIA", 0)), *metric_status("DOT DIA", k.get("DOT DIA", 0), meta), "Acumulado do dia"),
+        ("DOT H/H", pct(avg), *metric_status("DOT H/H", avg, meta), "Média ponderada pelos PCTS"),
+        ("ABS", pct(k.get("ABS T1", 0)), *metric_status("ABS", k.get("ABS T1", 0), meta), "Atenção operacional"),
+        ("OOT DIA", pct(k.get("OOT DIA", 0)), *metric_status("OOT DIA", k.get("OOT DIA", 0), meta), "Acumulado do dia"),
+        ("V3 T1", pct(k.get("V3 T1", 0)), *metric_status("V3 T1", k.get("V3 T1", 0), meta), "Performance V3"),
+        ("V4 T1", pct(k.get("V4 T1", 0)), *metric_status("V4 T1", k.get("V4 T1", 0), meta), "Performance V4"),
+        ("PCTS", br_int(total_pcts), "neutral", "VOLUME", "Total hora a hora"),
+        ("PERDAS", br_int(total_perdas), "bad" if total_perdas > 0 else "ok", "MAPEADO", "Perdas extraídas dos textos"),
+    ]
+    return '<div class="kpi-grid-modern">' + ''.join(render_metric_card(a,b,c,d,e) for a,b,c,d,e in items) + '</div>'
+
+
+def build_critical_hours(hourly_df, meta):
+    if hourly_df.empty:
+        return "<div class='text-box'>Sem dados preenchidos.</div>"
+    rows = []
+    work = hourly_df.copy()
+    work["DOT %"] = pd.to_numeric(work.get("DOT %", pd.Series(dtype=float)), errors="coerce")
+    work["PCTS"] = pd.to_numeric(work.get("PCTS", pd.Series(dtype=float)), errors="coerce").fillna(0)
+    critical = work[(work["DOT %"].notna()) & (work["DOT %"] < meta)].sort_values("DOT %").head(5)
+    if critical.empty:
+        return "<div class='text-box'><span class='status-ok'>Nenhuma hora abaixo da meta preenchida.</span></div>"
+    for _, r in critical.iterrows():
+        perdas = safe(str(r.get("Principais perdas", "-"))[:95])
+        rows.append(
+            f"<div class='insight'><div><span>{safe(r.get('Hora','--'))}</span><br><b class='status-bad'>DOT {pct(num(r.get('DOT %',0)))}</b></div><div style='text-align:right'><span>PCTS</span><br><b>{br_int(int_num(r.get('PCTS',0)))}</b></div></div><div class='text-box' style='margin:-5px 0 8px'>{perdas}</div>"
+        )
+    return ''.join(rows)
+
+
+def build_area_status_html(dados):
+    arm_df = pd.DataFrame(dados.get("armazenagem", []))
+    if arm_df.empty:
+        return "<div class='text-box'>Sem status preenchido.</div>"
+    rows = []
+    for _, r in arm_df.iterrows():
+        status = str(r.get("Status", ""))
+        cls = "status-ok" if any(x in status.lower() for x in ["control", "final", "ok", "normal"]) else "status-bad" if any(x in status.lower() for x in ["satur", "crít", "crit", "atras", "risco"]) else "status-warn"
+        rows.append(f"<div class='insight'><div><span>Item</span><br><b>{safe(r.get('Item',''))}</b></div><div><span>Status</span><br><b class='{cls}'>{safe(status)}</b></div></div>")
+    return ''.join(rows)
+
 def main():
     init_state()
     dados = st.session_state["dados"]
     style_page()
     sidebar(dados)
 
-    st.markdown(
-        f"""
-        <div class="title-box">
-          <h1>{dados.get('titulo','FECHAMENTO')}</h1>
-          <p>Dashboard online preenchível • visão gerencial • resumo automático • PDF em 1 página</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    header_df = pd.DataFrame(dados.get("hourly", []))
+    header_avg = weighted_dot(header_df)
+    header_pcts = pd.to_numeric(header_df.get("PCTS", pd.Series(dtype=float)), errors="coerce").fillna(0).sum() if not header_df.empty else 0
+    header_losses = total_hourly_losses(header_df)
+    st.markdown(render_hero(dados, header_avg, header_pcts, header_losses), unsafe_allow_html=True)
 
     tab1, tab2, tab3, tab4 = st.tabs(["📝 Preenchimento", "📊 Visão gerencial", "📤 Exportar", "🌐 Subir online"])
 
@@ -671,37 +894,103 @@ def main():
         total_pcts = pd.to_numeric(hourly_df.get("PCTS", pd.Series(dtype=float)), errors="coerce").fillna(0).sum() if not hourly_df.empty else 0
         total_perdas = total_hourly_losses(hourly_df)
         dot_at = calc_dot_from_exp_loss(dados["dia_atual"].get("Expedidos", 0), dados["dia_atual"].get("Perdas", 0))
-        m1, m2, m3, m4, m5 = st.columns(5)
-        m1.metric("DOT T1", pct(dados["kpis"].get("DOT T1", 0)))
-        m2.metric("OOT T1", pct(dados["kpis"].get("OOT T1", 0)))
-        m3.metric("DOT H/H", pct(avg))
-        m4.metric("PCTS", br_int(total_pcts))
-        m5.metric("Perdas mapeadas", br_int(total_perdas))
-        st.caption(f"Regra de cor: DOT/OOT verde somente a partir de {pct(meta)}.")
+        dot_ant = calc_dot_from_exp_loss(dados["dia_anterior"].get("Expedidos", 0), dados["dia_anterior"].get("Perdas", 0))
 
-        chart_df = hourly_df.copy()
-        if not chart_df.empty:
-            chart_df["DOT %"] = pd.to_numeric(chart_df["DOT %"], errors="coerce")
-            chart_df = chart_df.dropna(subset=["DOT %"])
-            if not chart_df.empty:
-                st.line_chart(chart_df.set_index("Hora")[["DOT %"]], use_container_width=True)
+        st.markdown(build_metric_grid(dados, hourly_df), unsafe_allow_html=True)
 
-        left, right = st.columns([1.25, 1])
-        with left:
-            st.markdown("### Hora a hora")
-            st.dataframe(hourly_df, use_container_width=True, hide_index=True)
-        with right:
-            st.markdown("### Resumo gerencial")
-            st.markdown(f"""
-            <div class="clean-card">
-            <b>DOT atual:</b> <span class="{'status-ok' if dot_at >= meta else 'status-bad'}">{pct(dot_at)}</span><br>
-            <b>Expedidos atual:</b> {br_int(dados['dia_atual'].get('Expedidos', 0))}<br>
-            <b>Perdas atual:</b> {br_int(dados['dia_atual'].get('Perdas', 0))}<br><br>
-            <b>Principais perdas:</b><br>{str(dados.get('perdas_t1','-')).replace(chr(10), '<br>')}
+        top_left, top_right = st.columns([1.45, .9])
+        with top_left:
+            st.markdown("""
+            <div class="section-card">
+              <h3>📈 Evolução DOT hora a hora</h3>
+              <div class="subtle">Linha de tendência operacional para identificar horários críticos rapidamente.</div>
             </div>
             """, unsafe_allow_html=True)
-            st.markdown("### Resumo para WhatsApp")
-            st.code(build_summary(dados, hourly_df), language="text")
+            chart_df = hourly_df.copy()
+            if not chart_df.empty:
+                chart_df["DOT %"] = pd.to_numeric(chart_df.get("DOT %", pd.Series(dtype=float)), errors="coerce")
+                chart_df = chart_df.dropna(subset=["DOT %"])
+                if not chart_df.empty:
+                    st.line_chart(chart_df.set_index("Hora")[["DOT %"]], use_container_width=True, height=330)
+                else:
+                    st.info("Preencha o DOT hora a hora para exibir o gráfico.")
+            else:
+                st.info("Preencha o DOT hora a hora para exibir o gráfico.")
+
+        with top_right:
+            status_class = "status-ok" if dot_at >= meta else "status-bad"
+            status_text = "dentro da meta" if dot_at >= meta else "abaixo da meta"
+            delta = dot_at - dot_ant
+            delta_class = "status-ok" if delta >= 0 else "status-bad"
+            st.markdown(f"""
+            <div class="section-card">
+              <h3>🧭 Radar do turno</h3>
+              <div class="insight-list">
+                {render_insight_row('DOT atual', pct(dot_at), f"<b class='{status_class}'>{status_text}</b>")}
+                {render_insight_row('Variação vs. anterior', pct(delta), f"<b class='{delta_class}'>{'+' if delta >= 0 else ''}{pct(delta)}</b>")}
+                {render_insight_row('Expedidos atual', br_int(dados['dia_atual'].get('Expedidos', 0)), '')}
+                {render_insight_row('Perdas atual', br_int(dados['dia_atual'].get('Perdas', 0)), '')}
+              </div>
+              <div class="divider-soft"></div>
+              <div class="subtle">Regra visual: DOT/OOT em verde somente a partir de {pct(meta)}.</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        mid_left, mid_right = st.columns([1.05, .95])
+        with mid_left:
+            st.markdown("""
+            <div class="section-card">
+              <h3>⏱️ Horários abaixo da meta</h3>
+            """, unsafe_allow_html=True)
+            st.markdown(build_critical_hours(hourly_df, meta), unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            st.markdown("""
+            <div class="section-card">
+              <h3>📦 Hora a hora detalhado</h3>
+            </div>
+            """, unsafe_allow_html=True)
+            st.dataframe(hourly_df, use_container_width=True, hide_index=True, height=330)
+
+        with mid_right:
+            st.markdown(f"""
+            <div class="section-card">
+              <h3>📍 Principais perdas</h3>
+              <div class="text-box">{safe(dados.get('perdas_t1','-'))}</div>
+            </div>
+            <div class="section-card">
+              <h3>🏭 Perdas por área</h3>
+              <div class="text-box">{safe(dados.get('perdas_area','-'))}</div>
+            </div>
+            <div class="section-card">
+              <h3>✅ Ações / observações</h3>
+              <div class="text-box">{safe(dados.get('acoes','-'))}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        low_left, low_right = st.columns([.95, 1.05])
+        with low_left:
+            st.markdown("""
+            <div class="section-card">
+              <h3>🧱 Status armazenagem</h3>
+            """, unsafe_allow_html=True)
+            st.markdown(build_area_status_html(dados), unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+        with low_right:
+            inb = dados.get("inbound", {})
+            inbound_html = ''.join(render_insight_row(k, br_int(v) if isinstance(v, (int, float)) or str(v).isdigit() else v) for k, v in inb.items() if k != "Obs")
+            obs = safe(inb.get("Obs", "")) if inb.get("Obs") else "Sem observação."
+            st.markdown(f"""
+            <div class="section-card">
+              <h3>📥 Inbound</h3>
+              <div class="insight-list">{inbound_html}</div>
+              <div class="divider-soft"></div>
+              <div class="text-box">{obs}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("### 💬 Resumo para WhatsApp")
+        st.code(build_summary(dados, hourly_df), language="text")
 
     with tab3:
         hourly_df = pd.DataFrame(dados.get("hourly", []))
