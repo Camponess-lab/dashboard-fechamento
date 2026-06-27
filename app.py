@@ -800,6 +800,19 @@ def metric_status(name, value, meta):
     return "neutral", "INFO"
 
 
+
+
+def render_insight_row(label, value, extra=""):
+    extra_html = f"<span>{extra}</span>" if extra else ""
+    return f"""
+    <div class="insight">
+      <span>{safe(label)}</span>
+      <b>{safe(value)}</b>
+      {extra_html}
+    </div>
+    """
+
+
 def render_metric_card(label, value, status="neutral", pill="INFO", caption=""):
     return f"""
     <div class="metric-card {status}">
