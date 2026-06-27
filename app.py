@@ -395,20 +395,156 @@ td {{ border:1px solid #ddd; padding:4px; vertical-align:top; }}
 
 
 def style_page():
+    # CSS com contraste fixo para evitar letras sumindo quando o usuário alterna
+    # o tema do Streamlit entre light/dark. A área principal fica sempre legível.
     st.markdown(
         f"""
         <style>
-        .stApp {{ background: {BG}; }}
-        [data-testid="stSidebar"] {{ background: #111111; }}
-        [data-testid="stSidebar"] * {{ color: white; }}
-        div[data-testid="stMetric"] {{ background: white; border: 1px solid #e6e6e6; padding: 12px; border-radius: 16px; box-shadow: 0 8px 22px rgba(0,0,0,.04); }}
-        .block-container {{ padding-top: 1.4rem; padding-bottom: 2rem; }}
-        .title-box {{ background: linear-gradient(90deg, #FFE600, #FFF7A6); color:#111; padding: 18px 22px; border-radius: 18px; border:1px solid #e2d000; margin-bottom: 18px; }}
-        .title-box h1 {{ margin:0; font-size: 28px; }}
-        .title-box p {{ margin:4px 0 0; font-weight:700; }}
-        .clean-card {{ background:white; border:1px solid #e7e7e7; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow: 0 8px 22px rgba(0,0,0,.035); }}
-        .status-ok {{ color:{GREEN}; font-weight:900; }}
-        .status-bad {{ color:{RED}; font-weight:900; }}
+        :root {{
+            --dash-bg: #F5F5F5;
+            --dash-card: #FFFFFF;
+            --dash-text: #111111;
+            --dash-muted: #555555;
+            --dash-border: #E7E7E7;
+            --dash-yellow: #FFE600;
+            --dash-green: {GREEN};
+            --dash-red: {RED};
+        }}
+
+        /* Base do app: mantém o dashboard claro e legível mesmo se o tema global virar dark */
+        .stApp {{
+            background: var(--dash-bg) !important;
+            color: var(--dash-text) !important;
+        }}
+        .main .block-container {{
+            padding-top: 1.4rem;
+            padding-bottom: 2rem;
+        }}
+
+        /* Textos gerais do conteúdo principal */
+        .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6,
+        .stApp p, .stApp label, .stApp span, .stApp small,
+        .stApp div[data-testid="stMarkdownContainer"] {{
+            color: var(--dash-text) !important;
+        }}
+
+        /* Sidebar fica escura de propósito, mas com contraste garantido */
+        [data-testid="stSidebar"] {{
+            background: #111111 !important;
+        }}
+        [data-testid="stSidebar"] *,
+        [data-testid="stSidebar"] div[data-testid="stMarkdownContainer"],
+        [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] p,
+        [data-testid="stSidebar"] span {{
+            color: #FFFFFF !important;
+        }}
+
+        /* Campos de preenchimento: fundo claro e fonte escura em qualquer tema */
+        .stTextInput input, .stNumberInput input, .stTextArea textarea,
+        .stDateInput input, .stSelectbox div[data-baseweb="select"] > div,
+        [data-testid="stFileUploader"] section {{
+            background: #FFFFFF !important;
+            color: #111111 !important;
+            border-color: #D9D9D9 !important;
+        }}
+        .stTextInput input::placeholder, .stTextArea textarea::placeholder {{
+            color: #777777 !important;
+        }}
+        .stSelectbox div[data-baseweb="select"] span,
+        .stSelectbox div[data-baseweb="select"] svg {{
+            color: #111111 !important;
+            fill: #111111 !important;
+        }}
+
+        /* Botões com contraste fixo */
+        .stButton button, .stDownloadButton button {{
+            background: var(--dash-yellow) !important;
+            color: #111111 !important;
+            border: 1px solid #E2D000 !important;
+            font-weight: 800 !important;
+            border-radius: 10px !important;
+        }}
+        .stButton button *, .stDownloadButton button * {{
+            color: #111111 !important;
+        }}
+
+        /* Métricas: o problema principal no tema dark era texto branco sobre card branco */
+        div[data-testid="stMetric"] {{
+            background: #FFFFFF !important;
+            border: 1px solid #E6E6E6 !important;
+            padding: 12px !important;
+            border-radius: 16px !important;
+            box-shadow: 0 8px 22px rgba(0,0,0,.04) !important;
+        }}
+        div[data-testid="stMetric"] *,
+        div[data-testid="stMetricLabel"],
+        div[data-testid="stMetricValue"] {{
+            color: #111111 !important;
+        }}
+
+        /* Abas e tabelas */
+        button[data-baseweb="tab"] p {{
+            color: #111111 !important;
+            font-weight: 700 !important;
+        }}
+        div[data-testid="stDataFrame"], div[data-testid="stDataEditor"] {{
+            background: #FFFFFF !important;
+            color: #111111 !important;
+            border-radius: 12px !important;
+        }}
+
+        /* Blocos de código / resumo WhatsApp */
+        div[data-testid="stCodeBlock"], div[data-testid="stCodeBlock"] pre, div[data-testid="stCodeBlock"] code {{
+            background: #FFFFFF !important;
+            color: #111111 !important;
+            border: 1px solid #E6E6E6 !important;
+        }}
+
+        .title-box {{
+            background: linear-gradient(90deg, #FFE600, #FFF7A6) !important;
+            color: #111111 !important;
+            padding: 18px 22px;
+            border-radius: 18px;
+            border: 1px solid #E2D000;
+            margin-bottom: 18px;
+        }}
+        .title-box, .title-box * {{
+            color: #111111 !important;
+        }}
+        .title-box h1 {{
+            margin: 0;
+            font-size: 28px;
+        }}
+        .title-box p {{
+            margin: 4px 0 0;
+            font-weight: 700;
+        }}
+
+        .clean-card {{
+            background: #FFFFFF !important;
+            color: #111111 !important;
+            border: 1px solid #E7E7E7;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 22px rgba(0,0,0,.035);
+        }}
+        .clean-card * {{
+            color: #111111 !important;
+        }}
+        .status-ok, .clean-card .status-ok {{
+            color: var(--dash-green) !important;
+            font-weight: 900 !important;
+        }}
+        .status-bad, .clean-card .status-bad {{
+            color: var(--dash-red) !important;
+            font-weight: 900 !important;
+        }}
+
+        .stAlert, .stAlert * {{
+            color: #111111 !important;
+        }}
         </style>
         """,
         unsafe_allow_html=True,
