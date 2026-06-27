@@ -5,6 +5,7 @@ import re
 import html
 from copy import deepcopy
 from datetime import date, datetime
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -13,7 +14,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import Image as RLImage, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 st.set_page_config(
     page_title="Fechamento Gerencial",
@@ -22,12 +23,17 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+APP_DIR = Path(__file__).resolve().parent
+LOGO_PATH = APP_DIR / "assets" / "logo_mercado_livre.png"
+
 MELI_YELLOW = "#FFE600"
-DARK = "#111111"
+MELI_BLUE = "#2D3277"
+MELI_BLUE_LIGHT = "#EEF0FF"
+DARK = MELI_BLUE
 GREEN = "#00A650"
 RED = "#D1242F"
-BLUE = "#3483FA"
-BG = "#F5F5F5"
+BLUE = MELI_BLUE
+BG = "#F7F8FC"
 CARD = "#FFFFFF"
 
 DEFAULT = {
@@ -137,6 +143,30 @@ def br_int(v):
         return f"{int(round(float(v))):,}".replace(",", ".")
     except Exception:
         return "0"
+
+
+def logo_data_uri():
+    """Retorna a logo em base64 para usar em HTML/CSS, sem depender de caminho externo."""
+    try:
+        data = LOGO_PATH.read_bytes()
+        return "data:image/png;base64," + base64.b64encode(data).decode("utf-8")
+    except Exception:
+        return ""
+
+
+def logo_reportlab(width_cm=3.6):
+    """Cria uma imagem da logo para o PDF mantendo proporção."""
+    try:
+        if not LOGO_PATH.exists():
+            return None
+        img = RLImage(str(LOGO_PATH))
+        ratio = img.imageHeight / float(img.imageWidth or 1)
+        img.drawWidth = width_cm * cm
+        img.drawHeight = img.drawWidth * ratio
+        return img
+    except Exception:
+        return None
+
 
 
 def dot_color(v, meta):
@@ -252,7 +282,18 @@ def make_pdf(dados, hourly_df):
         data_br = datetime.fromisoformat(str(dados.get("data", ""))).strftime("%d/%m/%Y")
     except Exception:
         data_br = str(dados.get("data", ""))
-    story.append(Paragraph(f"{dados.get('titulo','FECHAMENTO')} • {data_br}", title))
+    logo_pdf = logo_reportlab(3.35)
+    title_block = Paragraph(f"<b>{html.escape(str(dados.get('titulo','FECHAMENTO')))}</b> • {data_br}<br/><font size='7' color='#2D3277'>Fechamento gerencial • Mercado Livre</font>", title)
+    if logo_pdf:
+        header = Table([[logo_pdf, title_block]], colWidths=[4.1*cm, 21.2*cm])
+        header.setStyle(TableStyle([
+            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+            ("BACKGROUND", (0,0), (-1,-1), colors.white),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+        ]))
+        story.append(header)
+    else:
+        story.append(title_block)
 
     meta = num(dados.get("meta_dot", 98))
     avg = weighted_dot(hourly_df)
@@ -346,6 +387,7 @@ def make_pdf(dados, hourly_df):
 
 
 def make_html_report(dados, hourly_df):
+    logo_uri = logo_data_uri()
     meta = num(dados.get("meta_dot", 98))
     avg = weighted_dot(hourly_df)
     total_pcts = pd.to_numeric(hourly_df.get("PCTS", pd.Series(dtype=float)), errors="coerce").fillna(0).sum() if not hourly_df.empty else 0
@@ -364,7 +406,7 @@ def make_html_report(dados, hourly_df):
 @page {{ size: A4 landscape; margin: 8mm; }}
 body {{ font-family: Arial, sans-serif; background:#f4f4f4; color:#111; margin:0; }}
 .sheet {{ padding:10px; }}
-.header {{ display:flex; justify-content:space-between; align-items:center; border-left:10px solid #ffe600; background:white; padding:10px; border-radius:12px; }}
+.header {{ display:flex; justify-content:space-between; align-items:center; border-left:10px solid #FFE600; background:white; padding:10px; border-radius:12px; }}
 h1 {{ margin:0; font-size:22px; }}
 .kpis {{ display:grid; grid-template-columns: repeat(10, 1fr); gap:6px; margin:8px 0; }}
 .kpi {{ background:white; border-radius:10px; padding:8px 6px; text-align:center; border:1px solid #ddd; }}
@@ -372,16 +414,19 @@ h1 {{ margin:0; font-size:22px; }}
 .kpi b {{ display:block; font-size:15px; margin-top:3px; }}
 .grid {{ display:grid; grid-template-columns: 1.08fr .92fr; gap:8px; }}
 .card {{ background:white; border:1px solid #ddd; border-radius:12px; padding:8px; }}
-h2 {{ font-size:13px; margin:0 0 6px; background:#111; color:white; padding:6px; border-radius:8px; }}
+h2 {{ font-size:13px; margin:0 0 6px; background:#2D3277; color:white; padding:6px; border-radius:8px; }}
 table {{ width:100%; border-collapse:collapse; font-size:10px; }}
-th {{ background:#111; color:white; padding:5px; }}
+th {{ background:#2D3277; color:white; padding:5px; }}
 td {{ border:1px solid #ddd; padding:4px; vertical-align:top; }}
 .ok {{ color:#00a650; }} .bad {{ color:#d1242f; }}
 .text {{ white-space:pre-wrap; font-size:10.5px; line-height:1.25; }}
 .footer {{ margin-top:6px; font-size:9px; color:#555; display:flex; justify-content:space-between; }}
+.brand {{ display:flex; align-items:center; gap:12px; }}
+.logo {{ width:86px; max-height:64px; object-fit:contain; background:#fff; border-radius:10px; }}
+.brand-title {{ display:flex; flex-direction:column; gap:3px; }}
 @media print {{ body {{ background:white; }} .sheet {{ padding:0; }} }}
 </style></head><body><div class="sheet">
-<div class="header"><div><h1>{dados.get('titulo','FECHAMENTO')}</h1><b>{dados.get('data','')} • Visão gerencial</b></div><div><b>DOT H/H: {pct(avg)}</b><br>PCTS {br_int(total_pcts)} • Perdas {br_int(total_perdas)}</div></div>
+<div class="header"><div class="brand"><img class="logo" src="{logo_uri}" alt="Mercado Livre"><div class="brand-title"><h1>{dados.get('titulo','FECHAMENTO')}</h1><b>{dados.get('data','')} • Visão gerencial</b></div></div><div><b>DOT H/H: {pct(avg)}</b><br>PCTS {br_int(total_pcts)} • Perdas {br_int(total_perdas)}</div></div>
 <div class="kpis">{cards}</div>
 <div class="grid"><div class="card"><h2>DOT hora a hora</h2><table><thead><tr><th>Hora</th><th>DOT</th><th>PCTS</th><th>Maiores perdas</th></tr></thead><tbody>{rows}</tbody></table></div>
 <div>
@@ -395,207 +440,237 @@ td {{ border:1px solid #ddd; padding:4px; vertical-align:top; }}
 
 
 def style_page():
-    # CSS com contraste fixo + visual gerencial mais moderno.
-    # A ideia é manter o dashboard bonito e legível mesmo quando o usuário troca Dark/Light.
+    # Visual clean e estável: força contraste claro para evitar texto sumindo no Dark/Light.
     st.markdown(
         f"""
         <style>
         :root {{
             --ml-yellow: #FFE600;
-            --ml-yellow-soft: #FFF7B8;
-            --ml-blue: #3483FA;
-            --ink: #101114;
+            --ml-blue: #2D3277;
+            --ink: #111827;
             --muted: #667085;
-            --line: #E7E7EA;
+            --line: #E5E7EB;
             --surface: #FFFFFF;
-            --surface-2: #F7F8FA;
+            --surface-2: #F7F8FC;
             --green: {GREEN};
             --red: {RED};
             --amber: #F59E0B;
-            --shadow: 0 14px 38px rgba(16, 17, 20, .08);
-            --radius: 22px;
+            --shadow: 0 10px 28px rgba(17, 24, 39, .08);
         }}
 
-        .stApp {{
-            background:
-                radial-gradient(circle at top left, rgba(255,230,0,.26), transparent 28rem),
-                linear-gradient(135deg, #FAFAFA 0%, #F2F4F7 100%) !important;
+        html, body, .stApp {{
+            background: #F4F6F8 !important;
             color: var(--ink) !important;
         }}
+
         .main .block-container {{
-            padding-top: 1.1rem;
-            padding-bottom: 2.2rem;
-            max-width: 1500px;
+            padding-top: 1.25rem !important;
+            padding-bottom: 2.2rem !important;
+            max-width: 1480px !important;
         }}
 
+        /* Texto padrão sempre legível */
         .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6,
         .stApp p, .stApp label, .stApp span, .stApp small,
         .stApp div[data-testid="stMarkdownContainer"] {{
             color: var(--ink) !important;
         }}
 
+        /* Sidebar clara e limpa */
         [data-testid="stSidebar"] {{
-            background: linear-gradient(180deg, #111111 0%, #202124 100%) !important;
-            border-right: 1px solid rgba(255,255,255,.12);
-        }}
-        [data-testid="stSidebar"] *,
-        [data-testid="stSidebar"] div[data-testid="stMarkdownContainer"],
-        [data-testid="stSidebar"] label,
-        [data-testid="stSidebar"] p,
-        [data-testid="stSidebar"] span {{
-            color: #FFFFFF !important;
-        }}
-        [data-testid="stSidebar"] .stTextInput input,
-        [data-testid="stSidebar"] .stNumberInput input,
-        [data-testid="stSidebar"] .stDateInput input,
-        [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] > div {{
             background: #FFFFFF !important;
-            color: #111111 !important;
+            border-right: 1px solid var(--line) !important;
+            box-shadow: 8px 0 24px rgba(17,24,39,.04) !important;
+        }}
+        [data-testid="stSidebar"] h1,
+        [data-testid="stSidebar"] h2,
+        [data-testid="stSidebar"] h3,
+        [data-testid="stSidebar"] p,
+        [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] span,
+        [data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] {{
+            color: var(--ink) !important;
+        }}
+        [data-testid="stSidebar"] h1 {{
+            font-size: 1.25rem !important;
+            font-weight: 900 !important;
+            padding-bottom: .25rem !important;
         }}
 
+        /* Inputs */
         .stTextInput input, .stNumberInput input, .stTextArea textarea,
         .stDateInput input, .stSelectbox div[data-baseweb="select"] > div,
         [data-testid="stFileUploader"] section {{
             background: #FFFFFF !important;
-            color: #111111 !important;
+            color: #111827 !important;
             border: 1px solid #D9DDE3 !important;
             border-radius: 12px !important;
+            box-shadow: none !important;
         }}
-        .stTextInput input::placeholder, .stTextArea textarea::placeholder {{ color: #777 !important; }}
+        .stTextInput input::placeholder, .stTextArea textarea::placeholder {{ color: #7A7F87 !important; }}
         .stSelectbox div[data-baseweb="select"] span,
-        .stSelectbox div[data-baseweb="select"] svg {{ color: #111 !important; fill: #111 !important; }}
+        .stSelectbox div[data-baseweb="select"] svg,
+        .stNumberInput svg, .stDateInput svg {{ color: #111827 !important; fill: #111827 !important; }}
 
+        /* Botões */
         .stButton button, .stDownloadButton button {{
-            background: linear-gradient(180deg, #FFE600, #F4D900) !important;
-            color: #111111 !important;
-            border: 1px solid #D6C400 !important;
+            background: linear-gradient(180deg, #FFE600, #F2D900) !important;
+            color: #111827 !important;
+            border: 1px solid #D7C600 !important;
             font-weight: 900 !important;
             border-radius: 14px !important;
-            box-shadow: 0 8px 20px rgba(0,0,0,.08) !important;
-            min-height: 44px;
+            box-shadow: 0 8px 18px rgba(17,24,39,.08) !important;
+            min-height: 44px !important;
         }}
-        .stButton button:hover, .stDownloadButton button:hover {{
-            filter: brightness(.98);
-            transform: translateY(-1px);
-        }}
-        .stButton button *, .stDownloadButton button * {{ color: #111 !important; }}
+        .stButton button *, .stDownloadButton button * {{ color: #111827 !important; }}
+        .stButton button:hover, .stDownloadButton button:hover {{ filter: brightness(.98); transform: translateY(-1px); }}
 
+        /* Abas */
         button[data-baseweb="tab"] {{
-            background: rgba(255,255,255,.65) !important;
+            background: #FFFFFF !important;
             border-radius: 999px !important;
             margin-right: 6px !important;
-            border: 1px solid rgba(16,17,20,.06) !important;
+            border: 1px solid var(--line) !important;
+            box-shadow: 0 4px 12px rgba(17,24,39,.04) !important;
         }}
-        button[data-baseweb="tab"] p {{ color: #111 !important; font-weight: 900 !important; }}
+        button[data-baseweb="tab"] p {{ color: #111827 !important; font-weight: 900 !important; }}
 
-        div[data-testid="stMetric"] {{
+        /* Componentes Streamlit */
+        div[data-testid="stMetric"], div[data-testid="stDataFrame"], div[data-testid="stDataEditor"] {{
             background: #FFFFFF !important;
-            border: 1px solid #E6E8ED !important;
-            padding: 14px !important;
+            color: #111827 !important;
             border-radius: 18px !important;
+            border: 1px solid var(--line) !important;
             box-shadow: var(--shadow) !important;
+            overflow: hidden !important;
         }}
-        div[data-testid="stMetric"] *, div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"] {{ color: #111 !important; }}
-
-        div[data-testid="stDataFrame"], div[data-testid="stDataEditor"] {{
-            background: #FFFFFF !important;
-            color: #111111 !important;
-            border-radius: 18px !important;
-            border: 1px solid #E6E8ED !important;
-            overflow: hidden;
-            box-shadow: 0 10px 28px rgba(16,17,20,.04) !important;
+        div[data-testid="stMetric"] *, div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"],
+        div[data-testid="stDataFrame"] *, div[data-testid="stDataEditor"] * {{
+            color: #111827 !important;
         }}
         div[data-testid="stCodeBlock"], div[data-testid="stCodeBlock"] pre, div[data-testid="stCodeBlock"] code {{
             background: #FFFFFF !important;
-            color: #111111 !important;
-            border: 1px solid #E6E8ED !important;
+            color: #111827 !important;
+            border: 1px solid var(--line) !important;
             border-radius: 16px !important;
         }}
-        .stAlert, .stAlert * {{ color: #111111 !important; }}
+        .stAlert, .stAlert * {{ color: #111827 !important; }}
 
+        /* Cabeçalho gerencial compacto */
         .hero {{
             position: relative;
             overflow: hidden;
-            background: linear-gradient(135deg, #111111 0%, #232323 46%, #3A3420 100%) !important;
-            border: 1px solid rgba(255,255,255,.10);
-            border-radius: 28px;
-            padding: 24px 26px;
-            margin-bottom: 18px;
-            box-shadow: 0 22px 55px rgba(16,17,20,.16);
+            background: linear-gradient(135deg, #FFFFFF 0%, #FFFFFF 56%, #FFF9B8 100%) !important;
+            border: 1px solid #DADDF6 !important;
+            border-top: 7px solid var(--ml-blue) !important;
+            border-left: 12px solid var(--ml-yellow) !important;
+            border-radius: 24px !important;
+            padding: 20px 22px !important;
+            margin-bottom: 16px !important;
+            box-shadow: var(--shadow) !important;
         }}
-        .hero:after {{
+        .hero:before {{
             content: "";
             position: absolute;
-            width: 320px;
-            height: 320px;
+            right: 18px;
+            top: 18px;
+            width: 110px;
+            height: 110px;
             border-radius: 50%;
-            right: -80px;
-            top: -120px;
-            background: rgba(255,230,0,.35);
-            filter: blur(2px);
+            background: rgba(45,50,119,.07);
+            z-index: 0;
         }}
+        .hero > * {{ position: relative; z-index: 1; }}
+
+        .brand-strip {{
+            display: flex !important;
+            align-items: center !important;
+            gap: 14px !important;
+            margin-bottom: 10px !important;
+        }}
+        .brand-logo {{
+            width: 132px !important;
+            max-height: 82px !important;
+            object-fit: contain !important;
+            background: #FFFFFF !important;
+            border: 1px solid #EAECF0 !important;
+            border-radius: 16px !important;
+            padding: 6px 10px !important;
+            box-shadow: 0 8px 22px rgba(45, 50, 119, .10) !important;
+        }}
+        .brand-copy {{
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 6px !important;
+        }}
+        .brand-copy .brand-name {{
+            color: var(--ml-blue) !important;
+            font-size: 13px !important;
+            font-weight: 950 !important;
+            text-transform: uppercase !important;
+            letter-spacing: .45px !important;
+        }}
+
         .hero .eyebrow {{
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: rgba(255,230,0,.16);
-            color: #FFE600 !important;
-            border: 1px solid rgba(255,230,0,.32);
-            border-radius: 999px;
-            padding: 7px 12px;
-            font-size: 12px;
-            font-weight: 900;
-            letter-spacing: .3px;
-            text-transform: uppercase;
+            background: #FFF7B8 !important;
+            color: #111827 !important;
+            border: 1px solid #F2D900 !important;
+            border-radius: 999px !important;
+            padding: 7px 13px !important;
+            font-size: 12px !important;
+            font-weight: 950 !important;
+            letter-spacing: .25px !important;
+            text-transform: uppercase !important;
         }}
         .hero h1 {{
-            margin: 13px 0 6px;
-            color: #FFFFFF !important;
-            font-size: 34px;
-            line-height: 1.06;
-            letter-spacing: -0.8px;
+            margin: 12px 0 6px !important;
+            color: #111827 !important;
+            font-size: 30px !important;
+            line-height: 1.08 !important;
+            letter-spacing: -.5px !important;
+            font-weight: 950 !important;
         }}
-        .hero p {{ color: #E9EDF3 !important; margin: 0; font-weight: 700; }}
+        .hero p {{ color: #475467 !important; margin: 0 !important; font-weight: 800 !important; }}
         .hero .hero-grid {{
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
-            margin-top: 18px;
-            max-width: 760px;
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+            margin-top: 16px !important;
+            max-width: 880px !important;
         }}
         .hero-stat {{
-            background: rgba(255,255,255,.08);
-            border: 1px solid rgba(255,255,255,.14);
-            border-radius: 16px;
-            padding: 11px 13px;
-            backdrop-filter: blur(8px);
+            background: #F8FAFC !important;
+            border: 1px solid #EAECF0 !important;
+            border-radius: 16px !important;
+            padding: 12px 14px !important;
         }}
-        .hero-stat span {{ color: #C9CED7 !important; font-size: 11px; font-weight: 800; text-transform: uppercase; }}
-        .hero-stat b {{ color: #FFFFFF !important; display:block; font-size: 17px; margin-top: 2px; }}
+        .hero-stat span {{ color: #667085 !important; font-size: 11px !important; font-weight: 900 !important; text-transform: uppercase !important; }}
+        .hero-stat b {{ color: #111827 !important; display:block !important; font-size: 17px !important; margin-top: 3px !important; }}
 
         .kpi-grid-modern {{
-            display:grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 12px;
-            margin: 12px 0 18px;
+            display:grid !important;
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            gap: 12px !important;
+            margin: 12px 0 18px !important;
         }}
         .metric-card {{
-            background: var(--surface) !important;
-            color: var(--ink) !important;
-            border: 1px solid #E6E8ED;
-            border-radius: 22px;
-            padding: 16px;
-            box-shadow: var(--shadow);
-            min-height: 118px;
-            position: relative;
-            overflow: hidden;
+            background: #FFFFFF !important;
+            color: #111827 !important;
+            border: 1px solid var(--line) !important;
+            border-radius: 20px !important;
+            padding: 15px 15px 14px 17px !important;
+            box-shadow: var(--shadow) !important;
+            min-height: 108px !important;
+            position: relative !important;
+            overflow: hidden !important;
         }}
         .metric-card:before {{
             content:"";
             position:absolute;
-            left:0;
-            top:0;
-            bottom:0;
+            left:0; top:0; bottom:0;
             width: 6px;
             background: var(--ml-blue);
         }}
@@ -603,17 +678,13 @@ def style_page():
         .metric-card.bad:before {{ background: var(--red); }}
         .metric-card.warn:before {{ background: var(--amber); }}
         .metric-card.neutral:before {{ background: var(--ml-blue); }}
-        .metric-card .label {{ color: #667085 !important; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .25px; }}
-        .metric-card .value {{ color: #101114 !important; font-size: 30px; font-weight: 1000; line-height: 1; margin-top: 10px; letter-spacing: -1px; }}
-        .metric-card .caption {{ color: #667085 !important; font-size: 12px; font-weight: 800; margin-top: 8px; }}
+        .metric-card .label {{ color: #667085 !important; font-size: 12px !important; font-weight: 900 !important; text-transform: uppercase !important; letter-spacing: .25px !important; }}
+        .metric-card .value {{ color: #111827 !important; font-size: 28px !important; font-weight: 950 !important; line-height: 1 !important; margin-top: 10px !important; letter-spacing: -.7px !important; }}
+        .metric-card .caption {{ color: #667085 !important; font-size: 12px !important; font-weight: 800 !important; margin-top: 8px !important; }}
         .metric-card .pill {{
-            position:absolute;
-            top: 13px;
-            right: 13px;
-            border-radius: 999px;
-            padding: 5px 9px;
-            font-size: 11px;
-            font-weight: 1000;
+            position:absolute; top: 13px; right: 13px;
+            border-radius: 999px; padding: 5px 9px;
+            font-size: 11px; font-weight: 950;
         }}
         .metric-card.ok .pill {{ background: rgba(0,166,80,.10); color: var(--green) !important; }}
         .metric-card.bad .pill {{ background: rgba(209,36,47,.10); color: var(--red) !important; }}
@@ -621,52 +692,51 @@ def style_page():
         .metric-card.neutral .pill {{ background: rgba(52,131,250,.10); color: var(--ml-blue) !important; }}
 
         .section-card {{
-            background: rgba(255,255,255,.92) !important;
-            border: 1px solid #E6E8ED;
-            border-radius: 24px;
-            padding: 18px;
-            margin-bottom: 14px;
-            box-shadow: var(--shadow);
+            background: #FFFFFF !important;
+            border: 1px solid var(--line) !important;
+            border-radius: 22px !important;
+            padding: 18px !important;
+            margin-bottom: 14px !important;
+            box-shadow: var(--shadow) !important;
         }}
         .section-card h3 {{
             margin: 0 0 12px !important;
             font-size: 18px !important;
-            letter-spacing: -.2px;
+            letter-spacing: -.2px !important;
+            color: #111827 !important;
         }}
-        .section-card .subtle {{ color: #667085 !important; font-size: 12px; font-weight: 800; }}
+        .section-card .subtle {{ color: #667085 !important; font-size: 12px !important; font-weight: 800 !important; }}
         .insight-list {{ display: flex; flex-direction: column; gap: 9px; }}
         .insight {{
-            display:flex;
-            justify-content:space-between;
-            gap: 10px;
-            background: #F8FAFC;
-            border: 1px solid #EAECF0;
-            border-radius: 16px;
-            padding: 11px 12px;
-            font-weight: 800;
+            display:flex; justify-content:space-between; gap: 10px;
+            background: #F8FAFC !important;
+            border: 1px solid #EAECF0 !important;
+            border-radius: 16px !important;
+            padding: 11px 12px !important;
+            font-weight: 800 !important;
         }}
-        .insight span {{ color:#667085 !important; font-size: 12px; }}
-        .insight b {{ color:#101114 !important; }}
+        .insight span {{ color:#667085 !important; font-size: 12px !important; }}
+        .insight b {{ color:#111827 !important; }}
         .text-box {{
-            background: #F8FAFC;
-            border: 1px solid #EAECF0;
-            border-radius: 16px;
-            padding: 12px;
-            white-space: pre-wrap;
-            font-size: 13px;
-            line-height: 1.36;
-            color:#101114 !important;
-            max-height: 330px;
-            overflow: auto;
+            background: #F8FAFC !important;
+            border: 1px solid #EAECF0 !important;
+            border-radius: 16px !important;
+            padding: 12px !important;
+            white-space: pre-wrap !important;
+            font-size: 13px !important;
+            line-height: 1.36 !important;
+            color:#111827 !important;
+            max-height: 330px !important;
+            overflow: auto !important;
         }}
-        .status-ok {{ color: var(--green) !important; font-weight: 1000 !important; }}
-        .status-bad {{ color: var(--red) !important; font-weight: 1000 !important; }}
-        .status-warn {{ color: var(--amber) !important; font-weight: 1000 !important; }}
+        .status-ok {{ color: var(--green) !important; font-weight: 950 !important; }}
+        .status-bad {{ color: var(--red) !important; font-weight: 950 !important; }}
+        .status-warn {{ color: var(--amber) !important; font-weight: 950 !important; }}
         .divider-soft {{ height:1px; background:#E6E8ED; margin: 14px 0; }}
 
         @media (max-width: 1100px) {{
-            .kpi-grid-modern {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
-            .hero .hero-grid {{ grid-template-columns: 1fr; }}
+            .kpi-grid-modern {{ grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }}
+            .hero .hero-grid {{ grid-template-columns: 1fr !important; }}
         }}
         </style>
         """,
@@ -674,7 +744,11 @@ def style_page():
     )
 
 def sidebar(dados):
-    st.sidebar.title("🚛 Fechamento")
+    try:
+        st.sidebar.image(str(LOGO_PATH), width=190)
+    except Exception:
+        pass
+    st.sidebar.title("Fechamento")
     dados["titulo"] = st.sidebar.text_input("Título", dados.get("titulo", "FECHAMENTO T1"))
     dados["turno"] = st.sidebar.selectbox("Turno", ["T1", "T2", "T3", "DIA"], index=["T1", "T2", "T3", "DIA"].index(dados.get("turno", "T1")) if dados.get("turno") in ["T1", "T2", "T3", "DIA"] else 0)
     try:
@@ -742,12 +816,19 @@ def render_hero(dados, avg, total_pcts, total_perdas):
         data_br = datetime.fromisoformat(str(dados.get("data", ""))).strftime("%d/%m/%Y")
     except Exception:
         data_br = str(dados.get("data", ""))
-    meta = num(dados.get("meta_dot", 98))
+    logo_uri = logo_data_uri()
+    logo_html = f'<img class="brand-logo" src="{logo_uri}" alt="Mercado Livre">' if logo_uri else '<div class="eyebrow">Mercado Livre</div>'
     return f"""
     <div class="hero">
-      <div class="eyebrow">🚛 Fechamento gerencial</div>
+      <div class="brand-strip">
+        {logo_html}
+        <div class="brand-copy">
+          <span class="brand-name">Fechamento operacional</span>
+          <div class="eyebrow">🚛 Fechamento gerencial</div>
+        </div>
+      </div>
       <h1>{safe(dados.get('titulo','FECHAMENTO'))}</h1>
-      <p>Visão clean para liderança • preenchimento operacional • PDF em 1 página</p>
+      <p>Visão clean para liderança • preenchimento operacional • PDF em uma página</p>
       <div class="hero-grid">
         <div class="hero-stat"><span>Data / Turno</span><b>{safe(data_br)} • {safe(dados.get('turno','T1'))}</b></div>
         <div class="hero-stat"><span>DOT hora a hora</span><b>{safe(pct(avg))}</b></div>
@@ -755,10 +836,6 @@ def render_hero(dados, avg, total_pcts, total_perdas):
       </div>
     </div>
     """
-
-
-def render_insight_row(label, value, extra=""):
-    return f"""<div class="insight"><div><span>{safe(label)}</span><br><b>{safe(value)}</b></div><div>{extra}</div></div>"""
 
 
 def build_metric_grid(dados, hourly_df):
