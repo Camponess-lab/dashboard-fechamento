@@ -61,9 +61,14 @@ Script e não pode ser testado fora dele.
 | 2 | `index.html` · `renderHistory` | Botão **Excluir** do histórico só aparece para `admin` | `deleteFechamento` exige admin (`requireAdmin_`); o operador via um botão que **sempre** falhava com "Acesso negado" |
 | 3 | `index.html` (CSS header) | Comentário do tema corrigido (acento **amarelo MELI**/azul, fontes do sistema) | Documentação dizia "acento laranja" e fontes Sora/Inter/JetBrains que **não** são usadas |
 | 4 | `index.html` (mensagens de prévia/exportação PDF/PNG) | Acentuação correta em textos exibidos ao usuário ("Não foi possível", "prévia", "página", "técnico", "automático", "impressão"…) | Mensagens sem acento passam impressão de descuido ao usuário final |
+| 5 | `Code.gs` (50 mensagens) | Passada completa de acentuação em mensagens de erro/validação e textos de auditoria (sessão, login, senha, planilha…) | Eram exibidas ao usuário via `withFailureHandler` e gravadas na aba `AUDITORIA` sem acento |
+| 6 | `index.html` (login) | Remoção de **código morto** (`getLocalLoginUsers`, `saveLocalLoginUsers`, `checkLocalLogin`, `saveUserLocal`, `deleteUserLocal`, `DEFAULT_LOGIN_USERS`) e simplificação de `editUserFromAdmin` | Stubs neutralizados que só poluíam o arquivo; `editUserFromAdmin` passa a usar apenas `usersAdminCache` |
+| 7 | `index.html` (watchdog) | `DEFAULT_INTERNAL`/`KPI_ROWS`/`STATUS_OPTIONS` passam a **reutilizar** `DEFAULT_DATA`/`kpiConfig`/`statusOptions` do script principal, com as cópias locais como *fallback* | Acaba com a divergência silenciosa entre as duas cópias; pior caso (principal não inicializa) = comportamento atual |
 
 > Nenhuma alteração foi feita em identificadores, chaves de comparação
 > (ex.: `id="previa-pdf"`, status `Controlado/Saturado/...`) nem em hashes/salts.
+> Validação: `Code.gs` e os dois blocos `<script>` do `index.html` continuam com
+> sintaxe íntegra (parse via Node).
 
 ---
 
@@ -90,19 +95,16 @@ anterior.
 
 ### P1 — Manutenibilidade / robustez
 
-**4.3 Duplicação script principal × watchdog — maior dívida técnica.**
-`DEFAULT_DATA`/`DEFAULT_INTERNAL`, `kpiConfig`/`KPI_ROWS`,
-`statusOptions`/`STATUS_OPTIONS` e **todas** as funções de render existem em
-**duas cópias** (script principal e watchdog). São ~300 linhas que precisam ser
-mantidas em sincronia manualmente — qualquer alteração em uma cópia e não na
-outra causa divergência silenciosa. Ver proposta na seção 5.
+**4.3 Duplicação script principal × watchdog — maior dívida técnica.** *(dados resolvidos; render pendente)*
+Os **dados** (`DEFAULT_DATA`, `kpiConfig`, `statusOptions`) agora têm fonte única:
+o watchdog os reutiliza do script principal (correção §3.7), eliminando a
+divergência silenciosa mais provável. **As funções de render continuam
+duplicadas** (~200 linhas) — propositalmente, pois são a rede de resiliência do
+watchdog. Unificá-las (seção 5) exige teste no Web App publicado e foi deixado
+para uma etapa com validação ao vivo.
 
-**4.4 Código morto de login local.**
-`getLocalLoginUsers`, `saveLocalLoginUsers`, `checkLocalLogin`, `saveUserLocal`,
-`deleteUserLocal` e `DEFAULT_LOGIN_USERS = []` foram neutralizados por segurança,
-mas continuam no arquivo (e `editUserFromAdmin` ainda chama `getLocalLoginUsers`).
-- *Recomendação:* remover os stubs e simplificar `editUserFromAdmin` para usar só
-  `usersAdminCache`.
+**4.4 Código morto de login local.** ✅ *Resolvido em §3.6.*
+Stubs removidos e `editUserFromAdmin` simplificado para usar `usersAdminCache`.
 
 **4.5 CSS com duas camadas de cascata.**
 Há um bloco "OVERRIDES — padrão MELI" que **redefine** regras já declaradas acima
@@ -115,11 +117,11 @@ Mistura de `var`/`let`/`const` e `==`/`===`; duas funções de escape
 
 ### P2 — Polimento / consistência
 
-**4.7 Normalização de idioma/encoding (parcialmente feito em §3.4).**
-Ainda há mensagens **ao usuário** sem acento, principalmente em `throw new Error`
-no `Code.gs` ("Sessao expirada", "Voce nao pode…", "obrigatorio", "invalido",
-"provisoria"). Recomenda-se uma passada completa — **sem** tocar em identificadores
-ou chaves de comparação.
+**4.7 Normalização de idioma/encoding.** ✅ *Resolvido em §3.4 e §3.5.*
+Mensagens ao usuário e textos de auditoria do `Code.gs` (50 strings) e as
+mensagens de prévia/exportação do `index.html` foram acentuados. Resta apenas
+revisar eventuais textos pontuais futuros — sempre **sem** tocar em
+identificadores ou chaves de comparação.
 
 **4.8 Limiares mágicos espalhados.**
 `98` (DOT/OOT) e `4` (ABS) aparecem repetidos em `updateCalculations`,
@@ -160,16 +162,33 @@ Como não há testes automatizados (esperado em GAS), sugiro um roteiro manual:
 - [ ] Salvar fechamento → aparece no Sheets e no histórico; auditoria registrada.
 - [ ] Prévia/Baixar PDF/PNG com conteúdo curto e muito longo (auto-escala).
 - [ ] Logout volta ao login sem recarregar; recarregar mantém sessão (token 6 h).
+- [ ] Admin: editar/salvar/excluir e resetar senha de usuário (após limpeza do código morto, §3.6).
+- [ ] Painel monta KPIs/linhas/áreas após login (watchdog usando a fonte única, §3.7).
 
 ---
 
 ## 7. Próximos passos sugeridos
 
-1. **P0:** tirar PII/hashes do fonte (§4.1) e limpar rascunho em terminal
-   compartilhado (§4.2).
-2. **P1:** unificar estado/render principal × watchdog (§5) e remover código morto
-   (§4.4).
-3. **P2:** passada completa de acentuação (§4.7) e centralização de limiares (§4.8).
+**Já aplicado nesta revisão (baixo risco):** correções §3.1–§3.7 — bug da política
+de senha, botão Excluir, acentuação completa, remoção de código morto e fonte
+única dos dados do watchdog.
 
-Itens P1/P2 são de baixo risco, mas pedem teste no Web App publicado antes de
-promover para produção.
+**Pendente, por exigir decisão/teste ao vivo:**
+
+1. **P0 — tirar PII/hashes do fonte (§4.1).** É a melhoria de segurança mais
+   importante, mas **não** foi aplicada porque mexe no *bootstrap* de login e
+   poderia causar *lockout*: esvaziar `DEFAULT_LOGIN_USERS_SERVER` quebra o
+   "Resetar senha" (que depende de `copyDefaultTemporaryPassword_`) e a recriação
+   automática de usuários numa instalação limpa. O caminho seguro:
+   *(a)* mover a semente para Script Properties via função de setup única com salt
+   aleatório, **e** *(b)* religar `resetPasswordFromAdmin` para usar
+   `resetUserPassword` (senha provisória definida pelo admin) em vez de
+   `resetUserPasswordToDefault`. Exige publicar e testar o login antes de produção.
+2. **P0 — rascunho em terminal compartilhado (§4.2).** Decisão do time: limpar o
+   rascunho no logout (evita vazar dados entre turnos, mas perde rascunho não
+   salvo) **ou** namespacing por usuário.
+3. **P1 — unificar as funções de render principal × watchdog (§5).**
+4. **P2 — CSS (§4.5), estilo de código (§4.6) e limiares mágicos (§4.8).**
+
+Todos os pendentes são de baixo/médio risco, mas pedem teste no Web App publicado
+antes de promover para produção.

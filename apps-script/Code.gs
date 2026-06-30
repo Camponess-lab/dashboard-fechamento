@@ -221,22 +221,22 @@ function validatePasswordStrength_(login, password, currentPassword, user) {
     return 'A nova senha deve ser diferente da senha atual.';
   }
   if (normalizedLogin && (normalizedPass === normalizedLogin || normalizedPass.indexOf(normalizedLogin) >= 0)) {
-    return 'A senha nao deve conter o login do usuario.';
+    return 'A senha não deve conter o login do usuário.';
   }
   if (COMMON_WEAK_PASSWORDS.indexOf(normalizedPass) >= 0) {
-    return 'Use uma senha menos previsivel.';
+    return 'Use uma senha menos previsível.';
   }
   if (!/[A-Za-z]/.test(pass) || !/\d/.test(pass)) {
-    return 'A senha precisa combinar letras e numeros.';
+    return 'A senha precisa combinar letras e números.';
   }
   if (/^(.)\1+$/.test(pass)) {
-    return 'A senha nao pode repetir o mesmo caractere.';
+    return 'A senha não pode repetir o mesmo caractere.';
   }
   if (user && checkUserPassword_(user, pass)) {
     return 'A nova senha deve ser diferente da senha atual.';
   }
   if (user && checkPasswordHistory_(user, pass)) {
-    return 'A nova senha nao pode repetir uma das senhas recentes.';
+    return 'A nova senha não pode repetir uma das senhas recentes.';
   }
   return '';
 }
@@ -363,13 +363,13 @@ function saveLoginUsers_(users) {
   clean.forEach(function(user) {
     const key = normalizeLogin_(user.usuario);
     if (seen[key]) {
-      throw new Error('Existe login duplicado na base de usuarios: ' + key);
+      throw new Error('Existe login duplicado na base de usuários: ' + key);
     }
     seen[key] = true;
   });
 
   if (!clean.some(isActiveAdmin_)) {
-    throw new Error('E obrigatorio manter pelo menos um administrador ativo.');
+    throw new Error('É obrigatório manter pelo menos um administrador ativo.');
   }
 
   clean.sort(function(a, b) {
@@ -482,7 +482,7 @@ function requireValidSessionIfProvided_(auth) {
   if (!extractAuthToken_(auth)) return null;
   const user = getSessionUser_(auth);
   if (!user) {
-    throw new Error('Sessao expirada: faca login novamente.');
+    throw new Error('Sessão expirada: faça login novamente.');
   }
   return user;
 }
@@ -490,7 +490,7 @@ function requireValidSessionIfProvided_(auth) {
 function requireSession_(auth) {
   const user = getSessionUser_(auth);
   if (!user) {
-    throw new Error('Sessao expirada: faca login novamente.');
+    throw new Error('Sessão expirada: faça login novamente.');
   }
   return user;
 }
@@ -498,7 +498,7 @@ function requireSession_(auth) {
 function requireAdmin_(auth) {
   const admin = getSessionUser_(auth);
   if (!isActiveAdmin_(admin)) {
-    throw new Error('Acesso negado ou sessao expirada: faca login novamente com um usuario administrador.');
+    throw new Error('Acesso negado ou sessão expirada: faça login novamente com um usuário administrador.');
   }
   return admin;
 }
@@ -564,7 +564,7 @@ function checkLogin(usuario, senha) {
 function validateSession(auth) {
   const user = getSessionUser_(auth);
   if (!user) {
-    return { ok: false, success: false, message: 'Sessao expirada. Faca login novamente.' };
+    return { ok: false, success: false, message: 'Sessão expirada. Faça login novamente.' };
   }
   return { ok: true, success: true, user: publicLoginUser_(user), backendVersion: BACKEND_VERSION };
 }
@@ -572,7 +572,7 @@ function validateSession(auth) {
 function logout(auth) {
   const token = extractAuthToken_(auth);
   if (token) CacheService.getScriptCache().remove(LOGIN_TOKEN_PREFIX + token);
-  return { ok: true, success: true, message: 'Sessao encerrada.' };
+  return { ok: true, success: true, message: 'Sessão encerrada.' };
 }
 
 function changeOwnPassword(usuario, senhaAtual, novaSenha) {
@@ -581,7 +581,7 @@ function changeOwnPassword(usuario, senhaAtual, novaSenha) {
   const next = String(novaSenha || '');
 
   if (!login || !current || !next) {
-    return { ok: false, success: false, message: 'Informe usuario, senha atual e nova senha.' };
+    return { ok: false, success: false, message: 'Informe usuário, senha atual e nova senha.' };
   }
 
   const blockedMessage = getLoginBlockedMessage_(login);
@@ -611,7 +611,7 @@ function changeOwnPassword(usuario, senhaAtual, novaSenha) {
     clearPasswordResetRequest_(login);
 
     const updated = users.find(function(item) { return normalizeLogin_(item.usuario) === login; });
-    auditLog_(null, 'SENHA_ALTERADA', updated ? updated.usuario : login, 'Senha alterada pelo proprio usuario.');
+    auditLog_(null, 'SENHA_ALTERADA', updated ? updated.usuario : login, 'Senha alterada pelo próprio usuário.');
     return {
       ok: true,
       success: true,
@@ -637,15 +637,15 @@ function saveLoginUser(auth, payload) {
   const ativo = payload.ativo !== false;
   const novaSenha = String(payload.senha || '');
 
-  if (!nome) throw new Error('Informe o nome do usuario.');
-  if (!usuario) throw new Error('Informe o login do usuario.');
+  if (!nome) throw new Error('Informe o nome do usuário.');
+  if (!usuario) throw new Error('Informe o login do usuário.');
   if (!LOGIN_USER_PATTERN.test(usuario)) {
-    throw new Error('O login deve ter de 3 a 40 caracteres e usar apenas letras, numeros, ponto, hifen ou sublinhado.');
+    throw new Error('O login deve ter de 3 a 40 caracteres e usar apenas letras, números, ponto, hífen ou sublinhado.');
   }
 
   const editingSelf = normalizeLogin_(admin.usuario) === (original || usuario);
   if (editingSelf && (!ativo || perfil !== 'admin')) {
-    throw new Error('Voce nao pode remover seu proprio acesso de administrador.');
+    throw new Error('Você não pode remover seu próprio acesso de administrador.');
   }
 
   return withScriptLock_(function() {
@@ -655,7 +655,7 @@ function saveLoginUser(auth, payload) {
       return key === usuario && key !== original;
     });
     if (duplicate) {
-      throw new Error('Ja existe um usuario cadastrado com este login.');
+      throw new Error('Já existe um usuário cadastrado com este login.');
     }
 
     const previous = users.find(function(item) {
@@ -675,7 +675,7 @@ function saveLoginUser(auth, payload) {
       }
       finalUser = setUserPassword_(finalUser, novaSenha, true);
     } else if (!finalUser.senhaHash) {
-      throw new Error('Informe uma senha para novo usuario.');
+      throw new Error('Informe uma senha para novo usuário.');
     }
 
     users = users.filter(function(item) {
@@ -685,7 +685,7 @@ function saveLoginUser(auth, payload) {
     users.push(finalUser);
     saveLoginUsers_(users);
     clearPasswordResetRequest_(usuario);
-    auditLog_(null, previous ? 'USUARIO_ATUALIZADO' : 'USUARIO_CRIADO', admin.usuario, 'Usuario afetado: ' + usuario + '. Perfil: ' + perfil + '. Ativo: ' + ativo + '.');
+    auditLog_(null, previous ? 'USUARIO_ATUALIZADO' : 'USUARIO_CRIADO', admin.usuario, 'Usuário afetado: ' + usuario + '. Perfil: ' + perfil + '. Ativo: ' + ativo + '.');
 
     return getLoginUsers_().map(publicLoginUser_);
   });
@@ -694,9 +694,9 @@ function saveLoginUser(auth, payload) {
 function deleteLoginUser(auth, usuario) {
   const admin = requireAdmin_(auth);
   const login = normalizeLogin_(usuario);
-  if (!login) throw new Error('Login invalido.');
+  if (!login) throw new Error('Login inválido.');
   if (login === normalizeLogin_(admin.usuario)) {
-    throw new Error('Voce nao pode excluir o usuario logado.');
+    throw new Error('Você não pode excluir o usuário logado.');
   }
 
   return withScriptLock_(function() {
@@ -704,14 +704,14 @@ function deleteLoginUser(auth, usuario) {
     const exists = users.some(function(item) {
       return normalizeLogin_(item.usuario) === login;
     });
-    if (!exists) throw new Error('Usuario nao encontrado.');
+    if (!exists) throw new Error('Usuário não encontrado.');
 
     const nextUsers = users.filter(function(item) {
       return normalizeLogin_(item.usuario) !== login;
     });
     saveLoginUsers_(nextUsers);
     clearPasswordResetRequest_(login);
-    auditLog_(null, 'USUARIO_EXCLUIDO', admin.usuario, 'Usuario excluido: ' + login + '.');
+    auditLog_(null, 'USUARIO_EXCLUIDO', admin.usuario, 'Usuário excluído: ' + login + '.');
     return getLoginUsers_().map(publicLoginUser_);
   });
 }
@@ -720,7 +720,7 @@ function deleteLoginUser(auth, usuario) {
 function requestPasswordReset(usuario) {
   const login = normalizeLogin_(usuario);
   if (!login) {
-    return { ok: false, success: false, message: 'Informe o usuario para solicitar a redefinicao.' };
+    return { ok: false, success: false, message: 'Informe o usuário para solicitar a redefinição.' };
   }
 
   const exists = getLoginUsers_().some(function(user) {
@@ -729,7 +729,7 @@ function requestPasswordReset(usuario) {
 
   // Mensagem intencionalmente generica para nao confirmar detalhes alem do necessario.
   if (!exists) {
-    return { ok: true, success: true, message: 'Se o usuario existir, a solicitacao foi registrada. Peca ao administrador para redefinir a senha provisoria.' };
+    return { ok: true, success: true, message: 'Se o usuário existir, a solicitação foi registrada. Peça ao administrador para redefinir a senha provisória.' };
   }
 
   return withScriptLock_(function() {
@@ -743,7 +743,7 @@ function requestPasswordReset(usuario) {
     requests[login] = new Date().toISOString();
     props.setProperty(PASSWORD_RESET_REQUESTS_PROPERTY, JSON.stringify(requests));
 
-    return { ok: true, success: true, message: 'Solicitacao registrada. Peca ao administrador para redefinir sua senha provisoria.' };
+    return { ok: true, success: true, message: 'Solicitação registrada. Peça ao administrador para redefinir sua senha provisória.' };
   });
 }
 
@@ -787,19 +787,19 @@ function listPasswordResetRequests(auth) {
 function resetUserPasswordToDefault(auth, usuario) {
   const admin = requireAdmin_(auth);
   const login = normalizeLogin_(usuario);
-  if (!login) throw new Error('Login invalido.');
+  if (!login) throw new Error('Login inválido.');
 
   return withScriptLock_(function() {
     let users = getLoginUsers_();
     const index = users.findIndex(function(user) {
       return normalizeLogin_(user.usuario) === login;
     });
-    if (index < 0) throw new Error('Usuario nao encontrado.');
+    if (index < 0) throw new Error('Usuário não encontrado.');
 
     users[index] = copyDefaultTemporaryPassword_(users[index]);
     saveLoginUsers_(users);
     clearPasswordResetRequest_(login);
-    auditLog_(null, 'SENHA_REDEFINIDA_PADRAO', admin.usuario, 'Usuario afetado: ' + login + '.');
+    auditLog_(null, 'SENHA_REDEFINIDA_PADRAO', admin.usuario, 'Usuário afetado: ' + login + '.');
     return getLoginUsers_().map(publicLoginUser_);
   });
 }
@@ -808,15 +808,15 @@ function resetUserPassword(auth, usuario, senhaProvisoria) {
   const admin = requireAdmin_(auth);
   const login = normalizeLogin_(usuario);
   const temporaryPassword = String(senhaProvisoria || '');
-  if (!login) throw new Error('Login invalido.');
-  if (!temporaryPassword) throw new Error('Informe a senha provisoria.');
+  if (!login) throw new Error('Login inválido.');
+  if (!temporaryPassword) throw new Error('Informe a senha provisória.');
 
   return withScriptLock_(function() {
     let users = getLoginUsers_();
     const index = users.findIndex(function(user) {
       return normalizeLogin_(user.usuario) === login;
     });
-    if (index < 0) throw new Error('Usuario nao encontrado.');
+    if (index < 0) throw new Error('Usuário não encontrado.');
 
     const validationMessage = validatePasswordStrength_(login, temporaryPassword, '', users[index]);
     if (validationMessage) {
@@ -826,7 +826,7 @@ function resetUserPassword(auth, usuario, senhaProvisoria) {
     users[index] = setUserPassword_(users[index], temporaryPassword, true);
     saveLoginUsers_(users);
     clearPasswordResetRequest_(login);
-    auditLog_(null, 'SENHA_REDEFINIDA_MANUAL', admin.usuario, 'Usuario afetado: ' + login + '.');
+    auditLog_(null, 'SENHA_REDEFINIDA_MANUAL', admin.usuario, 'Usuário afetado: ' + login + '.');
     return getLoginUsers_().map(publicLoginUser_);
   });
 }
@@ -856,7 +856,7 @@ function resetDefaultUsersToTemporaryPassword_Manual() {
 function resetLoginUsers_() {
   return withScriptLock_(function() {
     saveLoginUsers_(DEFAULT_LOGIN_USERS_SERVER);
-    auditLog_(null, 'USUARIOS_RESTAURADOS', 'manual', 'Base de usuarios restaurada para os padroes do codigo.');
+    auditLog_(null, 'USUARIOS_RESTAURADOS', 'manual', 'Base de usuários restaurada para os padrões do código.');
     return getLoginUsers_().map(publicLoginUser_);
   });
 }
@@ -958,7 +958,7 @@ function exportFechamentosJson(auth, limit) {
 function resetDefaultUsersToTemporaryPassword(auth) {
   const admin = requireAdmin_(auth);
   const result = resetDefaultUsersToTemporaryPassword_Manual();
-  auditLog_(null, 'SENHAS_PADRAO_RESTAURADAS', admin.usuario, 'Usuarios padrao redefinidos para senha provisoria.');
+  auditLog_(null, 'SENHAS_PADRAO_RESTAURADAS', admin.usuario, 'Usuários padrão redefinidos para senha provisória.');
   return result;
 }
 
@@ -982,7 +982,7 @@ function doGet(e) {
 function include(filename) {
   filename = String(filename || '').trim();
   if (!INCLUDE_FILE_PATTERN.test(filename)) {
-    throw new Error('Nome de arquivo HTML invalido.');
+    throw new Error('Nome de arquivo HTML inválido.');
   }
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
@@ -1028,7 +1028,7 @@ function getAppInfo(auth) {
 /** Cria (ou atualiza, se o ID já existir) um fechamento na planilha. */
 function saveFechamento(payload, auth) {
   if (!payload || typeof payload !== 'object') {
-    throw new Error('Payload invalido.');
+    throw new Error('Payload inválido.');
   }
 
   const authValue = auth || payload.auth || payload.authToken || payload.sessionToken || payload.loginToken || payload.userToken;
@@ -1058,7 +1058,7 @@ function saveFechamento(payload, auth) {
     const m = cleanPayload.metrics || {};
     const json = JSON.stringify(cleanPayload);
     if (json.length > JSON_CELL_MAX_LENGTH) {
-      throw new Error('O fechamento ficou grande demais para salvar em uma unica celula do Google Sheets. Reduza anexos/textos ou divida o registro.');
+      throw new Error('O fechamento ficou grande demais para salvar em uma única célula do Google Sheets. Reduza anexos/textos ou divida o registro.');
     }
 
     const row = [
@@ -1156,12 +1156,12 @@ function getFechamento(id, auth) {
     requireValidSessionIfProvided_(auth);
   }
   id = sanitizeId_(id);
-  if (!id) throw new Error('ID nao informado.');
+  if (!id) throw new Error('ID não informado.');
 
   const ss  = getOrCreateSpreadsheet_();
   const sh  = ensureSheetHeaders_(ss);
   const row = findRowById_(sh, id);
-  if (row <= 1) throw new Error('Fechamento nao encontrado.');
+  if (row <= 1) throw new Error('Fechamento não encontrado.');
 
   const json = sh.getRange(row, 19).getValue();
   if (!json) throw new Error('Registro sem JSON salvo.');
@@ -1169,7 +1169,7 @@ function getFechamento(id, auth) {
   try {
     return JSON.parse(json);
   } catch (e) {
-    throw new Error('JSON do fechamento esta corrompido: ' + e.message);
+    throw new Error('JSON do fechamento está corrompido: ' + e.message);
   }
 }
 
@@ -1177,18 +1177,18 @@ function getFechamento(id, auth) {
 function deleteFechamento(id, auth) {
   const sessionUser = requireAdmin_(auth);
   id = sanitizeId_(id);
-  if (!id) throw new Error('ID nao informado.');
+  if (!id) throw new Error('ID não informado.');
 
   return withScriptLock_(function() {
     const ss  = getOrCreateSpreadsheet_();
     const sh  = ensureSheetHeaders_(ss);
     const row = findRowById_(sh, id);
-    if (row <= 1) throw new Error('Fechamento nao encontrado.');
+    if (row <= 1) throw new Error('Fechamento não encontrado.');
 
     sh.deleteRow(row);
     ensureSheetFilter_(sh);
     auditLog_(ss, 'FECHAMENTO_EXCLUIDO', sessionUser.usuario, 'ID: ' + id + '.');
-    return { ok: true, message: 'Fechamento excluido.' };
+    return { ok: true, message: 'Fechamento excluído.' };
   });
 }
 
@@ -1258,7 +1258,7 @@ function openConfiguredSpreadsheet_(spreadsheetId, sourceLabel) {
     ensureAuditSheet_(ss);
     return ss;
   } catch (err) {
-    throw new Error('Nao consegui abrir a planilha configurada em ' + sourceLabel + ': ' + err.message);
+    throw new Error('Não consegui abrir a planilha configurada em ' + sourceLabel + ': ' + err.message);
   }
 }
 
@@ -1276,7 +1276,7 @@ function extractSpreadsheetId_(spreadsheetIdOrUrl) {
 function setSpreadsheetConnection_(spreadsheetIdOrUrl, actor) {
   const id = extractSpreadsheetId_(spreadsheetIdOrUrl);
   if (!id) {
-    throw new Error('Informe um ID ou link valido da planilha.');
+    throw new Error('Informe um ID ou link válido da planilha.');
   }
 
   const ss = SpreadsheetApp.openById(id);
@@ -1313,7 +1313,7 @@ function inspectSpreadsheetConnection_() {
         url: ss.getUrl()
       };
     } catch (err) {
-      error = 'ID salvo nao abriu: ' + err.message;
+      error = 'ID salvo não abriu: ' + err.message;
     }
   }
 
@@ -1326,7 +1326,7 @@ function inspectSpreadsheetConnection_() {
         url: ss.getUrl()
       };
     } catch (err) {
-      error = [error, 'ID manual nao abriu: ' + err.message].filter(Boolean).join(' | ');
+      error = [error, 'ID manual não abriu: ' + err.message].filter(Boolean).join(' | ');
     }
   }
 

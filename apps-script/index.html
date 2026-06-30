@@ -3234,9 +3234,8 @@ let appInfo = null;
 let _historyListenerAdded = false;
 let _buildingPrint = false;
 
-const LOCAL_LOGIN_USERS_KEY = 'fechamento_nova_login_users_local_20260629_v1';
 // Mantido apenas para limpar versões antigas que gravavam usuários/senhas no navegador.
-const DEFAULT_LOGIN_USERS = [];
+const LOCAL_LOGIN_USERS_KEY = 'fechamento_nova_login_users_local_20260629_v1';
 let currentLoginUser = null;
 let usersAdminCache = [];
 let pendingPasswordChange = null;
@@ -3275,20 +3274,6 @@ function hasGoogleRuntime() {
 
 function clearLegacyLocalLoginUsers() {
   try { localStorage.removeItem(LOCAL_LOGIN_USERS_KEY); } catch (e) {}
-}
-
-function getLocalLoginUsers() {
-  clearLegacyLocalLoginUsers();
-  return [];
-}
-
-function saveLocalLoginUsers(users) {
-  clearLegacyLocalLoginUsers();
-  return [];
-}
-
-function checkLocalLogin(user, pass) {
-  return { ok:false };
 }
 
 function finishLogin(res, fallbackUser) {
@@ -3418,10 +3403,8 @@ function resetUserAdminForm() {
 
 function editUserFromAdmin(usuario) {
   const key = normalizeLoginText(usuario);
-  const localFull = getLocalLoginUsers().find(u => normalizeLoginText(u.usuario) === key);
-  const fromCache = usersAdminCache.find(u => normalizeLoginText(u.usuario) === key) || {};
-  const u = localFull || fromCache;
-  if (!u || !key) return;
+  const u = usersAdminCache.find(item => normalizeLoginText(item.usuario) === key) || {};
+  if (!key) return;
   $('userOriginal').value = key;
   $('userNome').value = u.nome || '';
   $('userLogin').value = key;
@@ -3442,10 +3425,6 @@ function getUserAdminPayload() {
     perfil: normalizeLoginText($('userPerfil')?.value || 'operador') === 'admin' ? 'admin' : 'operador',
     ativo: !!($('userAtivo')?.checked)
   };
-}
-
-function saveUserLocal(payload) {
-  throw new Error('Cadastro local desativado por segurança. Atualize o Code.gs e reimplante o Web App.');
 }
 
 function saveUserFromAdmin() {
@@ -3476,11 +3455,6 @@ function saveUserFromAdmin() {
     setUsersAdminMsg('Cadastro local desativado por segurança. Publique o Apps Script atualizado.', 'erro');
   }
 }
-
-function deleteUserLocal(usuario) {
-  throw new Error('Cadastro local desativado por segurança. Atualize o Code.gs e reimplante o Web App.');
-}
-
 
 function resetPasswordFromAdmin(usuario) {
   const key = normalizeLoginText(usuario);
@@ -4695,7 +4669,9 @@ window.addEventListener('load', initLogin);
   'use strict';
 
   var KEY = 'fechamento_nova_apps_script_20260629_v1';
-  var DEFAULT_INTERNAL = {
+  // Fonte única: usa as definições do script principal quando disponíveis.
+  // As cópias locais abaixo são apenas fallback caso o principal não inicialize.
+  var DEFAULT_INTERNAL = (typeof DEFAULT_DATA !== 'undefined' && DEFAULT_DATA && typeof DEFAULT_DATA === 'object') ? DEFAULT_DATA : {
     id:'', title:'FECHAMENTO T1', date:'', shift:'T1', responsavel:'',
     kpis:{
       absT1:'', dotT1:'', ootT1:'', dotDia:'', ootDia:'', dotSemana:'',
@@ -4745,7 +4721,7 @@ window.addEventListener('load', initLogin);
     metrics:{avgDot:'',totalPcts:'',totalParsedLoss:'',worstHour:''},
     statusResumo:''
   };
-  var KPI_ROWS = [
+  var KPI_ROWS = (typeof kpiConfig !== 'undefined' && Array.isArray(kpiConfig)) ? kpiConfig : [
     ['absT1','ABS T1','abs',[]],
     ['dotT1','DOT T1','dot',[['dotT1V3','V3'],['dotT1V4','V4']]],
     ['ootT1','OOT T1','dot',[]],
@@ -4753,7 +4729,7 @@ window.addEventListener('load', initLogin);
     ['ootDia','OOT DIA','dot',[]],
     ['dotSemana','DOT SEMANA','dot',[['dotSemanaV3','V3'],['dotSemanaV4','V4']]]
   ];
-  var STATUS_OPTIONS = ['Controlado','Saturado','Finalizado','Em andamento','Pendente','Crítico'];
+  var STATUS_OPTIONS = (typeof statusOptions !== 'undefined' && Array.isArray(statusOptions)) ? statusOptions : ['Controlado','Saturado','Finalizado','Em andamento','Pendente','Crítico'];
   var nativeLoadTried = false;
 
   function $(id) { return document.getElementById(id); }
