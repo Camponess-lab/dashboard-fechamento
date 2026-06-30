@@ -64,6 +64,7 @@ Script e não pode ser testado fora dele.
 | 5 | `Code.gs` (50 mensagens) | Passada completa de acentuação em mensagens de erro/validação e textos de auditoria (sessão, login, senha, planilha…) | Eram exibidas ao usuário via `withFailureHandler` e gravadas na aba `AUDITORIA` sem acento |
 | 6 | `index.html` (login) | Remoção de **código morto** (`getLocalLoginUsers`, `saveLocalLoginUsers`, `checkLocalLogin`, `saveUserLocal`, `deleteUserLocal`, `DEFAULT_LOGIN_USERS`) e simplificação de `editUserFromAdmin` | Stubs neutralizados que só poluíam o arquivo; `editUserFromAdmin` passa a usar apenas `usersAdminCache` |
 | 7 | `index.html` (watchdog) | `DEFAULT_INTERNAL`/`KPI_ROWS`/`STATUS_OPTIONS` passam a **reutilizar** `DEFAULT_DATA`/`kpiConfig`/`statusOptions` do script principal, com as cópias locais como *fallback* | Acaba com a divergência silenciosa entre as duas cópias; pior caso (principal não inicializa) = comportamento atual |
+| 8 | `Code.gs` + `index.html` (P0-4.1) | **Remoção de PII/hashes do fonte**: `DEFAULT_LOGIN_USERS_SERVER` esvaziado; novo `seedInitialAdmin()`/`setupPrimeiroAdmin()` (salt aleatório); "Resetar senha" do admin religado para `resetUserPassword` (provisória forte gerada/mostrada); máquinas de senha-padrão mortas removidas | Tira nomes reais + hashes (com salts previsíveis) do código-fonte sem expor credenciais; produção segue funcionando (usuários já no `PropertiesService`) |
 
 > Nenhuma alteração foi feita em identificadores, chaves de comparação
 > (ex.: `id="previa-pdf"`, status `Controlado/Saturado/...`) nem em hashes/salts.
@@ -76,16 +77,15 @@ Script e não pode ser testado fora dele.
 
 ### P0 — Segurança / dados sensíveis
 
-**4.1 PII + material de credencial no código-fonte.**
-`DEFAULT_LOGIN_USERS_SERVER` (`Code.gs`) traz **nomes reais** de colaboradores e
-hashes de senhas provisórias versionados no repositório.
-- *Risco:* exposição de dados pessoais e possibilidade de **brute-force offline**
-  das senhas provisórias (o atacante tem hash **e** salt).
-- *Agravante:* os salts são previsíveis (`fch_<login>_nova_20260629_v1`).
-- *Recomendação:* mover a lista-semente para **Script Properties** (ou criá-la
-  via função de setup única) e usar `newPasswordSalt_()` (salt aleatório) também
-  para os usuários iniciais. O código-fonte não deveria conter nem nomes nem
-  hashes.
+**4.1 PII + material de credencial no código-fonte.** ✅ *Resolvido em §3.8.*
+`DEFAULT_LOGIN_USERS_SERVER` foi esvaziado (sem nomes nem hashes). O primeiro
+admin agora é criado por `setupPrimeiroAdmin()`/`seedInitialAdmin()` com
+`setUserPassword_` (salt aleatório), e o "Resetar senha" usa `resetUserPassword`
+com senha provisória forte. A produção segue funcionando (usuários já no
+`PropertiesService`).
+- *Resíduo:* os hashes antigos **permanecem no histórico do Git**. Para zerar o
+  risco, rotacione pelo botão **Resetar senha** as provisórias ainda não trocadas
+  (e, se desejado, reescreva o histórico do repositório — fora do escopo aqui).
 
 **4.2 Rascunho operacional em terminal compartilhado.**
 `logoutApp` limpa as chaves de sessão, mas **não** o rascunho (`STORAGE_KEY`) no
@@ -164,31 +164,29 @@ Como não há testes automatizados (esperado em GAS), sugiro um roteiro manual:
 - [ ] Logout volta ao login sem recarregar; recarregar mantém sessão (token 6 h).
 - [ ] Admin: editar/salvar/excluir e resetar senha de usuário (após limpeza do código morto, §3.6).
 - [ ] Painel monta KPIs/linhas/áreas após login (watchdog usando a fonte única, §3.7).
+- [ ] **Bootstrap:** numa instância limpa, `setupPrimeiroAdmin()` cria o admin e o login funciona (§3.8).
+- [ ] **Resetar senha:** gera/aceita provisória forte, mostra ao admin e exige troca no próximo acesso (§3.8).
+- [ ] **Produção:** após o deploy, os usuários existentes continuam logando normalmente (§3.8).
 
 ---
 
 ## 7. Próximos passos sugeridos
 
-**Já aplicado nesta revisão (baixo risco):** correções §3.1–§3.7 — bug da política
-de senha, botão Excluir, acentuação completa, remoção de código morto e fonte
-única dos dados do watchdog.
+**Já aplicado nesta revisão:** correções §3.1–§3.8 — bug da política de senha,
+botão Excluir, acentuação completa, remoção de código morto, fonte única dos dados
+do watchdog e **remoção de PII/hashes do fonte com bootstrap seguro (P0-4.1)**.
+
+> ⚠️ **Antes de produção:** publique numa implantação de teste e valide o login,
+> o `setupPrimeiroAdmin()` e o "Resetar senha" (checklist em §6). A instância atual
+> não precisa de bootstrap (usuários já no `PropertiesService`).
 
 **Pendente, por exigir decisão/teste ao vivo:**
 
-1. **P0 — tirar PII/hashes do fonte (§4.1).** É a melhoria de segurança mais
-   importante, mas **não** foi aplicada porque mexe no *bootstrap* de login e
-   poderia causar *lockout*: esvaziar `DEFAULT_LOGIN_USERS_SERVER` quebra o
-   "Resetar senha" (que depende de `copyDefaultTemporaryPassword_`) e a recriação
-   automática de usuários numa instalação limpa. O caminho seguro:
-   *(a)* mover a semente para Script Properties via função de setup única com salt
-   aleatório, **e** *(b)* religar `resetPasswordFromAdmin` para usar
-   `resetUserPassword` (senha provisória definida pelo admin) em vez de
-   `resetUserPasswordToDefault`. Exige publicar e testar o login antes de produção.
-2. **P0 — rascunho em terminal compartilhado (§4.2).** Decisão do time: limpar o
+1. **P0 — rascunho em terminal compartilhado (§4.2).** Decisão do time: limpar o
    rascunho no logout (evita vazar dados entre turnos, mas perde rascunho não
    salvo) **ou** namespacing por usuário.
-3. **P1 — unificar as funções de render principal × watchdog (§5).**
-4. **P2 — CSS (§4.5), estilo de código (§4.6) e limiares mágicos (§4.8).**
+2. **P1 — unificar as funções de render principal × watchdog (§5).**
+3. **P2 — CSS (§4.5), estilo de código (§4.6) e limiares mágicos (§4.8).**
 
-Todos os pendentes são de baixo/médio risco, mas pedem teste no Web App publicado
-antes de promover para produção.
+Os pendentes são de baixo/médio risco, mas pedem teste no Web App publicado antes
+de promover para produção.

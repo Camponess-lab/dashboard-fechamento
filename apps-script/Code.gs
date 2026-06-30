@@ -67,16 +67,12 @@ const COMMON_WEAK_PASSWORDS = [
   'qwerty123', 'admin123', 'fechamento', 'fechamento123'
 ];
 
-const DEFAULT_LOGIN_USERS_SERVER = [
-  { nome: 'ESTEVÃO SANTANA', usuario: 'essantana', senhaSalt: 'fch_essantana_nova_20260629_v1', senhaHash: '5cd25b9592050fbd4a1c4c6dec58d7fc824d02a41836a6eef9c8cf8173123600', perfil: 'admin', ativo: true, mustChangePassword: true },
-  { nome: 'LEANDRO MARIANO', usuario: 'lemariano', senhaSalt: 'fch_lemariano_20260628_v1', senhaHash: '7285c683612cb824609df301f4350afae9466ca7b4bc7cc922f02412ae13ddc6', perfil: 'admin', ativo: true, mustChangePassword: true },
-  { nome: 'BRUNO RANDA', usuario: 'brranda', senhaSalt: 'fch_brranda_20260628_v1', senhaHash: '1a0d55d085b1e82a5342b1b54a483a1a9cba47eb134d7a19bfc45a2cb1a3999f', perfil: 'operador', ativo: true, mustChangePassword: true },
-  { nome: 'CCF FRANSIOZI', usuario: 'ccffransiozi', senhaSalt: 'fch_ccffransiozi_20260628_v1', senhaHash: '1a8ad6034d73184c608dfc2fb4b345225404316d99f1542ed131e6805265b474', perfil: 'operador', ativo: true, mustChangePassword: true },
-  { nome: 'P MARCAL', usuario: 'pmarcal', senhaSalt: 'fch_pmarcal_20260628_v1', senhaHash: '97628daf15499ad33e331f2e824c832862778da2865fc4799969c57f6eaebccd', perfil: 'operador', ativo: true, mustChangePassword: true },
-  { nome: 'VERA OLIVEIRA', usuario: 'veraoliveira', senhaSalt: 'fch_veraoliveira_20260628_v1', senhaHash: 'fccdbf3e01cf21a313f4768eb342a24e6ba38802c75a59aca2b41013ff8d1571', perfil: 'operador', ativo: true, mustChangePassword: true },
-  { nome: 'LUB OLIVEIRA', usuario: 'luboliveira', senhaSalt: 'fch_luboliveira_20260628_v1', senhaHash: 'a81637494ba511d9aa7f3d2bafc90f2bad39dd67244b13014060573dea1a101f', perfil: 'operador', ativo: true, mustChangePassword: true },
-  { nome: 'MANDA F NASCIM', usuario: 'mandafnascim', senhaSalt: 'fch_mandafnascim_20260628_v1', senhaHash: '9d84384e8d7981735104f24d27b5513629d6abb11c4c8080778eb4c132f7191c', perfil: 'operador', ativo: true, mustChangePassword: true }
-];
+// A base de usuários NÃO fica no código-fonte (sem PII nem hashes versionados).
+// Os logins ficam no PropertiesService (LOGIN_USERS_PROPERTY); o PRIMEIRO
+// administrador é criado uma única vez via setupPrimeiroAdmin() / seedInitialAdmin()
+// executado no editor do Apps Script (salt aleatório, troca obrigatória no 1º acesso).
+// Mantido vazio por compatibilidade com getLoginUsers_ / getLoginBackendStatus.
+const DEFAULT_LOGIN_USERS_SERVER = [];
 
 /**
  * Executa gravacoes criticas com lock para reduzir risco de sobrescrita
@@ -92,12 +88,52 @@ function withScriptLock_(callback) {
   }
 }
 
-function defaultLoginUsersMap_() {
-  const map = {};
-  DEFAULT_LOGIN_USERS_SERVER.map(cleanLoginUser_).forEach(function(user) {
-    if (user.usuario) map[normalizeLogin_(user.usuario)] = user;
+/**
+ * BOOTSTRAP — cria (ou reativa) o primeiro administrador SEM expor credenciais
+ * no código-fonte. Gera salt aleatório e marca troca obrigatória no 1º acesso.
+ * Reutilizável também para recuperar acesso de administrador.
+ */
+function seedInitialAdmin(nome, usuario, senhaProvisoria) {
+  nome = String(nome || '').trim();
+  const login = normalizeLogin_(usuario);
+  const senha = String(senhaProvisoria || '');
+  if (!nome) throw new Error('Informe o nome do administrador.');
+  if (!login) throw new Error('Informe o login do administrador.');
+  if (!LOGIN_USER_PATTERN.test(login)) {
+    throw new Error('O login deve ter de 3 a 40 caracteres e usar apenas letras, números, ponto, hífen ou sublinhado.');
+  }
+
+  return withScriptLock_(function() {
+    let users = getLoginUsers_();
+    const validationMessage = validatePasswordStrength_(login, senha, '', null);
+    if (validationMessage) throw new Error(validationMessage);
+
+    let user = users.find(function(item) { return normalizeLogin_(item.usuario) === login; });
+    const isNew = !user;
+    if (isNew) {
+      user = cleanLoginUser_({ nome: nome, usuario: login, perfil: 'admin', ativo: true });
+      users.push(user);
+    } else {
+      user.nome = nome;
+      user.perfil = 'admin';
+      user.ativo = true;
+    }
+    setUserPassword_(user, senha, true);
+    users = saveLoginUsers_(users);
+    auditLog_(null, isNew ? 'ADMIN_INICIAL_CRIADO' : 'ADMIN_INICIAL_ATUALIZADO', 'manual', 'Administrador definido via bootstrap: ' + login + '.');
+    return getLoginUsers_().map(publicLoginUser_);
   });
-  return map;
+}
+
+/**
+ * Atalho para rodar no editor do Apps Script: preencha as três constantes,
+ * execute UMA vez e depois apague os valores. Cria o primeiro administrador.
+ */
+function setupPrimeiroAdmin() {
+  const NOME = '';              // ex.: 'NOME SOBRENOME'
+  const LOGIN = '';             // ex.: 'nsobrenome'
+  const SENHA_PROVISORIA = '';  // mín. 8 caracteres, com letras e números
+  return seedInitialAdmin(NOME, LOGIN, SENHA_PROVISORIA);
 }
 
 function normalizePasswordHistory_(history) {
@@ -135,22 +171,6 @@ function rememberCurrentPassword_(user) {
   });
   if (!sameAlreadyStored) history.unshift(current);
   return history.slice(0, PASSWORD_HISTORY_LIMIT);
-}
-
-function copyDefaultTemporaryPassword_(targetUser) {
-  targetUser = cleanLoginUser_(targetUser || {});
-  const defaults = defaultLoginUsersMap_();
-  const seed = defaults[normalizeLogin_(targetUser.usuario)];
-  if (!seed) {
-    throw new Error('Este usuário não possui senha provisória padrão cadastrada no sistema. Edite o usuário e informe uma nova senha provisória.');
-  }
-  targetUser.passwordHistory = rememberCurrentPassword_(targetUser);
-  targetUser.senhaSalt = seed.senhaSalt;
-  targetUser.senhaHash = seed.senhaHash;
-  targetUser.mustChangePassword = true;
-  targetUser.passwordResetAt = new Date().toISOString();
-  targetUser.passwordChangedAt = '';
-  return targetUser;
 }
 
 function normalizeLogin_(value) {
@@ -784,26 +804,6 @@ function listPasswordResetRequests(auth) {
   });
 }
 
-function resetUserPasswordToDefault(auth, usuario) {
-  const admin = requireAdmin_(auth);
-  const login = normalizeLogin_(usuario);
-  if (!login) throw new Error('Login inválido.');
-
-  return withScriptLock_(function() {
-    let users = getLoginUsers_();
-    const index = users.findIndex(function(user) {
-      return normalizeLogin_(user.usuario) === login;
-    });
-    if (index < 0) throw new Error('Usuário não encontrado.');
-
-    users[index] = copyDefaultTemporaryPassword_(users[index]);
-    saveLoginUsers_(users);
-    clearPasswordResetRequest_(login);
-    auditLog_(null, 'SENHA_REDEFINIDA_PADRAO', admin.usuario, 'Usuário afetado: ' + login + '.');
-    return getLoginUsers_().map(publicLoginUser_);
-  });
-}
-
 function resetUserPassword(auth, usuario, senhaProvisoria) {
   const admin = requireAdmin_(auth);
   const login = normalizeLogin_(usuario);
@@ -830,37 +830,6 @@ function resetUserPassword(auth, usuario, senhaProvisoria) {
     return getLoginUsers_().map(publicLoginUser_);
   });
 }
-
-function resetDefaultUsersToTemporaryPassword_Manual() {
-  return withScriptLock_(function() {
-    const defaultMap = defaultLoginUsersMap_();
-    let users = getLoginUsers_();
-    const existing = {};
-
-    users = users.map(function(user) {
-      const key = normalizeLogin_(user.usuario);
-      existing[key] = true;
-      if (defaultMap[key]) return copyDefaultTemporaryPassword_(user);
-      return cleanLoginUser_(user);
-    });
-
-    Object.keys(defaultMap).forEach(function(key) {
-      if (!existing[key]) users.push(defaultMap[key]);
-    });
-
-    saveLoginUsers_(users);
-    return getLoginUsers_().map(publicLoginUser_);
-  });
-}
-
-function resetLoginUsers_() {
-  return withScriptLock_(function() {
-    saveLoginUsers_(DEFAULT_LOGIN_USERS_SERVER);
-    auditLog_(null, 'USUARIOS_RESTAURADOS', 'manual', 'Base de usuários restaurada para os padrões do código.');
-    return getLoginUsers_().map(publicLoginUser_);
-  });
-}
-
 
 function getLoginBackendStatus(auth) {
   const users = getLoginUsers_().map(publicLoginUser_);
@@ -953,13 +922,6 @@ function exportFechamentosJson(auth, limit) {
 
   auditLog_(ss, 'EXPORTACAO_JSON', admin.usuario, 'Quantidade exportada: ' + items.length + '.');
   return { ok: true, success: true, exportedAt: new Date().toISOString(), count: items.length, items: items };
-}
-
-function resetDefaultUsersToTemporaryPassword(auth) {
-  const admin = requireAdmin_(auth);
-  const result = resetDefaultUsersToTemporaryPassword_Manual();
-  auditLog_(null, 'SENHAS_PADRAO_RESTAURADAS', admin.usuario, 'Usuários padrão redefinidos para senha provisória.');
-  return result;
 }
 
 // ----------------------------------------------------------------------------
